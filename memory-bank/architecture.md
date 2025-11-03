@@ -33,7 +33,8 @@ projectboe/
 │   └── fonts/              # Font files
 ├── data/
 │   ├── maps/               # Map data files
-│   └── units/              # Unit definitions
+│   ├── units/              # Unit definitions
+│   └── saves/              # Save game data
 ├── tests/                  # Unit tests
 └── memory-bank/            # Documentation and design documents
     ├── game-design-document.md    # Core game design
@@ -75,10 +76,11 @@ Organized into three main submodules:
 ### Assets Module
 - Organized by media type for easy management
 - Contains all game assets like sprites, sounds, and fonts
-
 ### Data Module
 - **maps/**: Contains map definitions and generation data
 - **units/**: Unit definitions and configuration files
+- **saves/**: Save game data for both strategic and tactical layers
+
 
 ### Tests Module
 - Unit tests for all major components

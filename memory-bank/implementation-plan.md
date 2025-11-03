@@ -24,7 +24,9 @@
 ### Step 2.1: Create Province and Map Data Structures
 - Implement a Province class with properties (terrain type, race, connections)
 - Implement a Map class to manage provinces and their relationships
-- Test: Create a simple test map with 3-4 connected provinces and verify connections work
+- Implement random generation algorithm for provinces and connections
+- Default map size: 8x8 provinces
+- Test: Create a randomly generated test map with 8x8 provinces and verify connections work
 
 ### Step 2.2: Implement Strategic Map Rendering
 - Create a renderer for the strategic map
@@ -47,15 +49,16 @@
 
 ### Step 3.1: Create Grid System
 - Implement a grid class for tactical combat
-- Define grid properties (size, cell dimensions)
+- Define grid properties (configurable size with default 10x20, cell dimensions)
 - Implement coordinate systems and conversion between grid and screen coordinates
-- Test: Render a grid to screen and verify coordinates are correct
+- Test: Render a grid to screen with default 10x20 size and verify coordinates are correct
 
 ### Step 3.2: Implement Unit Data Structure
 - Create a Unit class with properties (health, attack, defense, movement)
 - Define different unit types based on game design document
 - Implement unit stats and basic attributes
-- Test: Create unit instances and verify their properties can be accessed and modified
+- Default stats for prototyping: hitpoints 50, melee attack 50, ranged attack 40, melee defence 0, ranged defence 0, stamina 90, initiative 100, morale 40
+- Test: Create unit instances with default stats and verify their properties can be accessed and modified
 
 ### Step 3.3: Create Tactical Map System
 - Implement tactical maps for combat encounters
@@ -126,8 +129,8 @@
 ### Step 6.2: Implement Basic Campaign Flow
 - Create a sequence of strategic and tactical encounters
 - Add basic win/loss conditions for the campaign
-- Implement save/load functionality
-- Test: Complete a basic campaign sequence and verify save/load works
+- Implement save/load functionality for both strategic and tactical layers
+- Test: Complete a basic campaign sequence and verify save/load works on both layers
 
 ### Step 6.3: Polish and Bug Fixing
 - Identify and fix bugs discovered during integration

@@ -7,8 +7,8 @@ BoE is a hybrid strategy game that combines elements from Eador and Battle Broth
 ## Gameplay Layers
 
 ### Strategic Layer
+The strategic layer takes place on a randomly generated map consisting of provinces (nodes) that differ primarily by terrain type and inhabitant races. The default map size is 8x8 provinces, with options for different world sizes and terrain preferences in the future. The main terrain types include:
 
-The strategic layer takes place on a randomly generated map consisting of provinces (nodes) that differ primarily by terrain type and inhabitant races. The main terrain types include:
 
 - Plains: Open areas that provide moderate movement speed and balanced combat bonuses
 - Woods: Dense areas that provide defensive bonuses but may limit movement for certain unit types
@@ -35,7 +35,7 @@ The tactical layer involves direct combat between the player's squad of units an
 - Armor and weapon considerations
 - RPG progression system for player units
 
-Combat mechanics emphasize tactical positioning, with different unit types having advantages and disadvantages against others. The battlefield terrain affects movement and combat effectiveness, with elevation, cover, and flanking playing important roles.
+Combat mechanics emphasize tactical positioning, with different unit types having advantages and disadvantages against others. The battlefield uses a configurable grid system (default 10x20) where terrain affects movement and combat effectiveness, with elevation, cover, and flanking playing important roles.
 
 Unit types include:
 - Infantry: Versatile ground units with balanced stats
@@ -44,11 +44,21 @@ Unit types include:
 - Siege: Specialized units for attacking fortifications
 - Support: Units that provide buffs, healing, or other utility
 
+Default unit stats for prototyping:
+- Hitpoints: 50
+- Melee attack: 50
+- Ranged attack: 40
+- Melee defence: 0
+- Ranged defence: 0
+- Stamina: 90
+- Initiative: 100
+- Morale: 40
+
 Equipment management includes weapons, armor, shields, and accessories that affect unit stats and abilities. Players can customize their units' gear based on tactical needs and available resources.
 
 RPG progression allows units to gain experience and level up, unlocking new abilities, improving stats, or gaining special traits. This creates a sense of attachment to veteran units and strategic decisions about which units to develop.
+After completing tactical combat, the game returns to the strategic layer with rewards, experience gains, and any consequences from the battle. The game supports save/load functionality for both strategic and tactical layers.
 
-After completing tactical combat, the game returns to the strategic layer with rewards, experience gains, and any consequences from the battle.
 
 ## Future Meta Layer
 
