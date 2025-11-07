@@ -1,4 +1,4 @@
-# AI-Assisted Coding Workflow Guide
+# AI-Assisted Coding Workflow Guide(this guide is for user who interacts with AI,not for AI itself)
 
 ## Understanding the AI Coding Environment
 

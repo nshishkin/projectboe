@@ -19,58 +19,58 @@
 - Implement basic states: menu, strategic, tactical
 - Test: Verify state transitions work by changing screen color or display text when switching states
 
-## Phase 2: Strategic Layer Foundation
+## Phase 2: Tactical Layer Foundation
 
-### Step 2.1: Create Province and Map Data Structures
-- Implement a Province class with properties (terrain type, race, connections)
-- Implement a Map class to manage provinces and their relationships
-- Implement random generation algorithm for provinces and connections
-- Default map size: 8x8 provinces
-- Test: Create a randomly generated test map with 8x8 provinces and verify connections work
-
-### Step 2.2: Implement Strategic Map Rendering
-- Create a renderer for the strategic map
-- Display provinces as nodes with different colors based on terrain
-- Implement basic camera movement to navigate the map
-- Test: Verify provinces are displayed correctly and camera movement works
-
-### Step 2.3: Implement Hero Movement System
-- Create a Hero class with position and movement capabilities
-- Implement pathfinding between connected provinces
-- Add movement validation based on terrain and hero capabilities
-- Test: Place hero on map and verify it can move between provinces along valid paths
-
-### Step 2.4: Strategic Layer UI
-- Implement UI elements for the strategic layer (province info, hero status)
-- Create menus for interacting with provinces (recruit, explore, etc.)
-- Test: Verify UI elements display correctly and respond to mouse clicks
-
-## Phase 3: Tactical Layer Foundation
-
-### Step 3.1: Create Grid System
+### Step 2.1: Create Grid System
 - Implement a grid class for tactical combat
 - Define grid properties (configurable size with default 10x20, cell dimensions)
 - Implement coordinate systems and conversion between grid and screen coordinates
 - Test: Render a grid to screen with default 10x20 size and verify coordinates are correct
 
-### Step 3.2: Implement Unit Data Structure
+### Step 2.2: Implement Unit Data Structure
 - Create a Unit class with properties (health, attack, defense, movement)
 - Define different unit types based on game design document
 - Implement unit stats and basic attributes
 - Default stats for prototyping: hitpoints 50, melee attack 50, ranged attack 40, melee defence 0, ranged defence 0, stamina 90, initiative 100, morale 40
 - Test: Create unit instances with default stats and verify their properties can be accessed and modified
 
-### Step 3.3: Create Tactical Map System
+### Step 2.3: Create Tactical Map System
 - Implement tactical maps for combat encounters
 - Define different terrain types on tactical grids
 - Connect strategic layer to tactical maps (when combat occurs)
 - Test: Load a tactical map and verify terrain types are correctly placed
 
-### Step 3.4: Implement Unit Placement System
+### Step 2.4: Implement Unit Placement System
 - Create system for placing units on tactical grid
 - Implement initial unit positioning for both player and enemy forces
 - Handle different formation types
 - Test: Place units on grid and verify they appear in correct positions
+
+## Phase 3: Strategic Layer Foundation
+
+### Step 3.1: Create Province and Map Data Structures
+- Implement a Province class with properties (terrain type, race, connections)
+- Implement a Map class to manage provinces and their relationships
+- Implement random generation algorithm for provinces and connections
+- Default map size: 8x8 provinces
+- Test: Create a randomly generated test map with 8x8 provinces and verify connections work
+
+### Step 3.2: Implement Strategic Map Rendering
+- Create a renderer for the strategic map
+- Display provinces as nodes with different colors based on terrain
+- Implement basic camera movement to navigate the map
+- Test: Verify provinces are displayed correctly and camera movement works
+
+### Step 3.3: Implement Hero Movement System
+- Create a Hero class with position and movement capabilities
+- Implement pathfinding between connected provinces
+- Add movement validation based on terrain and hero capabilities
+- Test: Place hero on map and verify it can move between provinces along valid paths
+
+### Step 3.4: Strategic Layer UI
+- Implement UI elements for the strategic layer (province info, hero status)
+- Create menus for interacting with provinces (recruit, explore, etc.)
+- Test: Verify UI elements display correctly and respond to mouse clicks
 
 ## Phase 4: Combat System
 
