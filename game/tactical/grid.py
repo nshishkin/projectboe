@@ -22,6 +22,7 @@ class HexTile:
         self.center_x = 0  # center x coordinate
         self.center_y = 0  # center y coordinate
         self.vertices = []  # list of vertex coordinates for drawing
+        self.is_passable = self._is_terrain_passable()  # Determine if the terrain is passable by units
         
     def cube_to_pixel(self, hex_size: int) -> Tuple[float, float]:
         """Convert cube coordinates to pixel coordinates (point-topped orientation)."""
@@ -39,7 +40,11 @@ class HexTile:
             x += hex_size * math.sqrt(3) / 2
         return x, y
 
-
+    def _is_terrain_passable(self) -> bool:
+        """Determine if the terrain type is passable by units."""
+        # Mountains are impassable, water may be as well depending on game rules
+        impassable_terrains = {"mountains"}  # Add "water" here if water should be impassable
+        return self.terrain_type not in impassable_terrains
 class HexGrid:
     """Hexagonal grid system for tactical combat."""
     
@@ -62,8 +67,8 @@ class HexGrid:
         for q in range(self.width):
             for r in range(self.height):
                 # Create a hex tile with random terrain
-                terrain_types = ["plain", "hills", "woods", "swamp", "water"]
-                terrain = random.choice(terrain_types)
+                from config.constants import TERRAIN_TYPES
+                terrain = random.choice(TERRAIN_TYPES)
                 hex_tile = HexTile(q, r, terrain)
                 
                 # Calculate pixel coordinates with appropriate offsets for horizontal layout
@@ -130,16 +135,10 @@ class HexGrid:
     def draw(self, screen: pygame.Surface):
         """Draw the hexagonal grid to the screen."""
         for hex_tile in self.hexes:
-            # Define colors for different terrain types
-            terrain_colors = {
-                "plain": (144, 238, 144),    # light green
-                "hills": (139, 69, 19),     # brown
-                "woods": (0, 100, 0),       # dark green
-                "swamp": (160, 120, 40),    # swamp brown
-                "water": (64, 164, 223)     # light blue
-            }
+            # Import terrain colors from constants
+            from config.constants import TERRAIN_COLORS
             
-            color = terrain_colors.get(hex_tile.terrain_type, (200, 200, 200))  # default gray
+            color = TERRAIN_COLORS.get(hex_tile.terrain_type, (200, 200, 200))  # default gray
             
             # Draw the hexagon
             if len(hex_tile.vertices) >= 6:

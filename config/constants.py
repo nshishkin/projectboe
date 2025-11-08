@@ -84,3 +84,17 @@ UI_BUTTON_WIDTH = 120
 UI_BUTTON_HEIGHT = 30
 UI_PANEL_MARGIN = 10
 UI_STATUS_BAR_HEIGHT = 25
+
+# Terrain Constants
+# Types of terrain that can appear on both strategic and tactical maps
+TERRAIN_TYPES = ["plain", "hills", "woods", "swamp", "water", "mountains"]
+
+# Terrain Colors
+TERRAIN_COLORS = {
+    "plain": (144, 238, 144),    # light green
+    "hills": (139, 69, 19),     # brown
+    "woods": (0, 100, 0),       # dark green
+    "swamp": (160, 120, 40),    # swamp brown
+    "water": (64, 164, 223),    # light blue
+    "mountains": (105, 105, 105)  # gray
+}

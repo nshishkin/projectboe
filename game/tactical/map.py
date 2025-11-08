@@ -41,7 +41,7 @@ class TacticalMap:
     def randomize_terrain(self):
         """Randomly assign terrain types to hexes."""
         import random
-        terrain_types = ["plain", "hills", "woods", "swamp", "water"]
+        from config.constants import TERRAIN_TYPES
         
         for hex_tile in self.grid.hexes:
-            hex_tile.terrain_type = random.choice(terrain_types)
+            hex_tile.terrain_type = random.choice(TERRAIN_TYPES)
