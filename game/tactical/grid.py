@@ -4,6 +4,7 @@ Implements a hexagonal grid with axial coordinates for the tactical map.
 """
 import pygame
 import math
+import random  # Импорт перемещен из функции generate_grid
 from typing import List, Tuple, Optional
 
 
@@ -23,24 +24,30 @@ class HexTile:
         self.vertices = []  # list of vertex coordinates for drawing
         
     def cube_to_pixel(self, hex_size: int) -> Tuple[float, float]:
-        """Convert cube coordinates to pixel coordinates (flat-topped orientation)."""
-        x = hex_size * 3/2 * self.q
-        y = hex_size * math.sqrt(3) * (self.r + 0.5 * (self.q % 2))
+        """Convert cube coordinates to pixel coordinates (point-topped orientation)."""
+        x = hex_size * math.sqrt(3) * self.q
+        y = hex_size * 3/2 * self.r
+        if self.r % 2 != 0:  # Odd rows
+            x += hex_size * math.sqrt(3) / 2
         return x, y
         
     def axial_to_pixel(self, hex_size: int, offset_x: float = 0, offset_y: float = 0) -> Tuple[float, float]:
-        """Convert axial coordinates to pixel coordinates with offset (flat-topped orientation)."""
-        # For flat-topped hexes in a rectangular grid
-        x = hex_size * 3/2 * self.q + offset_x
-        # Every other column is offset by half the height of a hex
-        y = hex_size * math.sqrt(3) * (self.r + 0.5 * (self.q % 2)) + offset_y
+        """Convert axial coordinates to pixel coordinates with offset (point-topped orientation)."""
+        x = hex_size * math.sqrt(3) * self.q + offset_x
+        y = hex_size * 3/2 * self.r + offset_y
+        if self.r % 2 != 0:  # Odd rows
+            x += hex_size * math.sqrt(3) / 2
         return x, y
 
 
 class HexGrid:
     """Hexagonal grid system for tactical combat."""
     
-    def __init__(self, width: int = 10, height: int = 20, hex_size: int = 30):
+    def __init__(self, width: int = 10, height: int = 20, hex_size: int = None):
+        from config.settings import HEX_SIZE
+        # Use the default hex size from settings if not provided
+        if hex_size is None:
+            hex_size = HEX_SIZE
         self.width = width  # number of columns (q-axis)
         self.height = height  # number of rows (r-axis)
         self.hex_size = hex_size  # radius of each hexagon
@@ -55,15 +62,15 @@ class HexGrid:
         for q in range(self.width):
             for r in range(self.height):
                 # Create a hex tile with random terrain
-                import random
                 terrain_types = ["plain", "hills", "woods", "swamp", "water"]
                 terrain = random.choice(terrain_types)
                 hex_tile = HexTile(q, r, terrain)
                 
                 # Calculate pixel coordinates with appropriate offsets for horizontal layout
                 # Position the grid starting from top-left of the screen area
-                offset_x = self.hex_size * 1.5  # Add some margin from the left edge
-                offset_y = self.hex_size * math.sqrt(3)  # Add some margin from the top edge
+                # Add margins to ensure the grid fits well within the view
+                offset_x = self.hex_size * 2  # Add margin from the left edge
+                offset_y = self.hex_size * 1.5  # Add margin from the top edge
                 
                 hex_tile.center_x, hex_tile.center_y = hex_tile.axial_to_pixel(
                     self.hex_size, offset_x, offset_y
@@ -79,12 +86,12 @@ class HexGrid:
                 self.hexes.append(hex_tile)
     
     def calculate_hex_vertices(self, center_x: float, center_y: float, size: int) -> List[Tuple[float, float]]:
-        """Calculate the 6 vertices of a flat-topped hexagon."""
+        """Calculate the 6 vertices of a point-topped hexagon."""
         vertices = []
         for i in range(6):
-            # For flat-topped hexagons, we start at 30 degrees to get flat sides at top/bottom
+            # For point-topped hexagons, we start at 30 degrees to get points at top/bottom
             # This gives us: 30°, 90°, 150°, 210°, 270°, 330°
-            # This creates a hexagon with flat top and bottom
+            # This creates a hexagon with points at top and bottom
             angle_deg = 60 * i + 30
             angle_rad = math.pi / 180 * angle_deg
             x = center_x + size * math.cos(angle_rad)
@@ -93,16 +100,16 @@ class HexGrid:
         return vertices
     
     def get_neighbors(self, hex_tile: HexTile) -> List[HexTile]:
-        """Get neighboring hex tiles for flat-topped orientation."""
-        # For flat-topped hexes, the neighbor directions are:
-        # Right, Bottom-right, Bottom-left, Left, Top-left, Top-right
+        """Get neighboring hex tiles for point-topped orientation."""
+        # For point-topped hexes, the neighbor directions are:
+        # Top, Top-right, Bottom-right, Bottom-left, Top-left
         directions = [
-            (+1, 0),  # right
-            (0, +1),  # bottom-right
+            (0, -1),  # top
+            (+1, -1), # top-right
+            (+1, 0),  # bottom-right
+            (0, +1),  # bottom
             (-1, +1), # bottom-left
-            (-1, 0),  # left
-            (0, -1),  # top-left
-            (+1, -1)  # top-right
+            (-1, 0),  # top-left
         ]
         
         neighbors = []

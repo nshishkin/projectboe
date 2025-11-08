@@ -27,7 +27,8 @@ The Brothers of Eador (BoE) project has completed Phase 1 of the implementation 
 ## Next Steps
 According to the implementation plan, the next phase involves:
 - Creating the strategic layer foundation (provinces and map system)
-- Implementing the grid system for tactical combat
 - Developing the unit data structure
+- Implementing combat mechanics
+- Adding UI elements for tactical combat
 
 The project is following the planned architecture and implementation roadmap as outlined in the memory bank documents.

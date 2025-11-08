@@ -10,7 +10,11 @@ from .grid import HexGrid
 class TacticalMap:
     """Manages the tactical map for combat encounters."""
     
-    def __init__(self, width: int = 20, height: int = 10, hex_size: int = 30):
+    def __init__(self, width: int = 20, height: int = 10, hex_size: int = None):
+        from config.settings import HEX_SIZE
+        # Use the default hex size from settings if not provided
+        if hex_size is None:
+            hex_size = HEX_SIZE
         self.width = width  # 20 hexes long (horizontal)
         self.height = height  # 10 hexes high (vertical)
         self.hex_size = hex_size

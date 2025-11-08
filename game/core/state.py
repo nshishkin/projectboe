@@ -127,8 +127,9 @@ class TacticalState(GameState):
         self.state_manager = state_manager
         # Import here to avoid circular dependencies
         from game.tactical.map import TacticalMap
-        # Initialize tactical map with 20 hexes width (horizontal) and 10 hexes height (vertical)
-        self.tactical_map = TacticalMap(width=20, height=10)
+        # Use dimensions from config settings
+        from config.settings import TACTICAL_GRID_WIDTH, TACTICAL_GRID_HEIGHT
+        self.tactical_map = TacticalMap(width=TACTICAL_GRID_WIDTH, height=TACTICAL_GRID_HEIGHT)
     
     def enter(self):
         print("Entering Tactical State")
