@@ -118,3 +118,12 @@ def main():
 - Consider implementing version control as your project grows
 
 This workflow will help you maximize the effectiveness of AI-assisted coding while building your BoE game with Pygame.
+
+to run the game:
+venv\Scripts\activate
+python main.py
+
+ESC: Quit the game
+M: Switch to Menu state
+S: Switch to Strategic state (green background)
+T: Switch to Tactical state (red background)

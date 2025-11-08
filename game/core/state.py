@@ -1,5 +1,5 @@
 """
-Game state management for Battle of Empires.
+Game state management for Brothers of Eador.
 This module manages different game states (tactical, strategic, menu, etc.)
 """
 
@@ -125,13 +125,17 @@ class TacticalState(GameState):
     
     def __init__(self, state_manager):
         self.state_manager = state_manager
+        # Import here to avoid circular dependencies
+        from game.tactical.map import TacticalMap
+        # Initialize tactical map with 20 hexes width (horizontal) and 10 hexes height (vertical)
+        self.tactical_map = TacticalMap(width=20, height=10)
     
     def enter(self):
         print("Entering Tactical State")
     
     def render(self, screen):
-        # Fill screen with a tactical combat background color
-        screen.fill((150, 100, 100))  # Red background for tactical view
+        # Render the tactical map instead of just filling with color
+        self.tactical_map.render(screen)
     
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:

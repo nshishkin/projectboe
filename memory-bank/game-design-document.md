@@ -1,4 +1,4 @@
-# BoE (Battle of Empires) - Game Design Document
+# BoE (Brothers of Eador) - Game Design Document
 
 ## Core Concept
 

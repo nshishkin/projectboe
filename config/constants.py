@@ -1,5 +1,5 @@
 """
-Global constants for Battle of Empires.
+Global constants for Brothers of Eador.
 This file contains immutable values used throughout the game (colors, dimensions, etc.)
 """
 

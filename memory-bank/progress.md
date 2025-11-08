@@ -1,7 +1,7 @@
 # Project Progress Summary
 
 ## Current Status
-The Battle of Empires (BoE) project has completed Phase 1 of the implementation plan with the core framework established and successfully tested.
+The Brothers of Eador (BoE) project has completed Phase 1 of the implementation plan with the core framework established and successfully tested.
 
 ## Completed Components
 - Project structure set up according to architecture.md

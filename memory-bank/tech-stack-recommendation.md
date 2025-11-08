@@ -1,4 +1,4 @@
-# Tech Stack Recommendation for BoE (Battle of Empires)
+# Tech Stack Recommendation for BoE (Brothers of Eador)
 
 Based on the game design document and your preference for Python and JavaScript without specialized game engines, here's my recommended tech stack:
 
@@ -33,6 +33,7 @@ Based on the game design document and your preference for Python and JavaScript 
 
 ## For the Tactical Layer
 - **Pygame**: For combat visualization
+- **Hexagonal grid system**: Using axial coordinates for efficient neighbor calculations
 - **Pathfinding algorithms** (A* implementation): For unit movement
 - **Custom grid-based rendering**: For tactical positioning
 

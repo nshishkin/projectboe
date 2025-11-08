@@ -1,4 +1,4 @@
-# Battle of Empires (BoE)
+# Brothers of Eador (BoE)
 
 A hybrid strategy game combining elements from Eador and Battle Brothers, featuring both strategic and tactical gameplay layers.
 

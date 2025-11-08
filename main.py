@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Main entry point for Battle of Empires (BoE) game.
+Main entry point for Brothers of Eador (BoE) game.
 This file initializes Pygame and starts the main game loop.
 """
 
@@ -17,7 +17,7 @@ def main():
     """Main function to run the game."""
     # Set up the display
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Battle of Empires")
+    pygame.display.set_caption("Brothers of Eador")
     
     # Set up the clock for managing frame rate
     clock = pygame.time.Clock()

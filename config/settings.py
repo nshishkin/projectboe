@@ -1,5 +1,5 @@
 """
-Game settings and constants for Battle of Empires.
+Game settings and constants for Brothers of Eador.
 This file contains configurable game parameters like screen resolution, game speed, etc.
 """
 
@@ -31,8 +31,8 @@ LIGHT_BROWN = (210, 180, 140)
 MIDNIGHT_BLUE = (25, 25, 112)
 
 # Tactical grid settings
-TACTICAL_GRID_WIDTH = 10
-TACTICAL_GRID_HEIGHT = 20
+TACTICAL_GRID_WIDTH = 20  # 20 hexes horizontally
+TACTICAL_GRID_HEIGHT = 10  # 10 hexes vertically
 CELL_SIZE = 48  # pixels per grid cell
 
 # Strategic map settings

@@ -1,4 +1,4 @@
-# BoE (Battle of Empires) Project Architecture
+# BoE (Brothers of Eador) Project Architecture
 
 ## Overview
 This document describes the project structure for the BoE game, a hybrid strategy game combining elements from Eador and Battle Brothers with both strategic and tactical gameplay layers.
@@ -59,7 +59,8 @@ projectboe/
 Organized into three main submodules:
 
 #### Tactical Layer
-- **grid.py**: Implements the grid system for tactical combat
+- **grid.py**: Implements the hexagonal grid system for tactical combat using axial coordinates
+- **map.py**: Manages the tactical map and handles map-related operations
 - **unit.py**: Defines unit properties, behaviors, and interactions
 - **combat.py**: Handles combat mechanics, damage calculation, and battle resolution
 
