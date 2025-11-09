@@ -54,7 +54,8 @@ class PresetManager:
             },
             constraints={
                 'min_plain': 10,
-                'max_mountains': 5
+                'max_mountains': 2,  # Maximum 2 mountain hexes
+                'max_water': 2      # Maximum 2 water hexes
             }
         )
         
@@ -72,7 +73,7 @@ class PresetManager:
             constraints={
                 'min_mountains': 8,
                 'no_swamp': True,
-                'no_water': True
+                'max_water': 2      # Maximum 2 water hexes
             }
         )
         
@@ -89,7 +90,8 @@ class PresetManager:
             },
             constraints={
                 'min_woods': 12,
-                'max_mountains': 3
+                'max_mountains': 2,  # Maximum 2 mountain hexes
+                'max_water': 2      # Maximum 2 water hexes
             }
         )
         
@@ -106,7 +108,8 @@ class PresetManager:
             },
             constraints={
                 'min_water': 10,
-                'min_plain': 5
+                'min_plain': 5,
+                'max_mountains': 2   # Maximum 2 mountain hexes
             }
         )
         
@@ -123,7 +126,8 @@ class PresetManager:
             },
             constraints={
                 'min_swamp': 15,
-                'no_mountains': True
+                'no_mountains': True,
+                'max_mountains': 2    # Maximum 2 mountain hexes
             }
         )
         
@@ -137,6 +141,10 @@ class PresetManager:
                 'swamp': 0.15,
                 'water': 0.15,
                 'mountains': 0.05
+            },
+            constraints={
+                'max_mountains': 2,   # Maximum 2 mountain hexes
+                'max_water': 2        # Maximum 2 water hexes
             }
         )
         

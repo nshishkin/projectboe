@@ -72,8 +72,31 @@ class TacticalMap:
         weight_manager = TerrainWeightManager(terrain_weights)
         
         # Generate terrain for each hex using the weighted system
-        for hex_tile in self.grid.hexes:
-            hex_tile.terrain_type = weight_manager.get_weighted_choice()
+        # Try to generate terrain that satisfies our constraints (max 2 mountains and max 2 water hexes)
+        max_attempts = 10  # Limit attempts to avoid infinite loops
+        attempt = 0
+        success = False
+        
+        while attempt < max_attempts and not success:
+            # Generate terrain for each hex using the weighted system
+            for hex_tile in self.grid.hexes:
+                hex_tile.terrain_type = weight_manager.get_weighted_choice()
+            
+            # Check if the generated terrain satisfies our constraints
+            constraints = {
+                'max_mountains': 2,  # Maximum 2 mountain hexes
+                'max_water': 2       # Maximum 2 water hexes
+            }
+            
+            success = ConstraintValidator.validate_hard_constraints(self.grid, constraints)
+            attempt += 1
+        
+        # If we couldn't satisfy the constraints after max_attempts, just go with what we have
+        if not success:
+            print(f"Warning: Could not satisfy terrain constraints after {max_attempts} attempts.")
+            # Generate terrain one more time using the original weights
+            for hex_tile in self.grid.hexes:
+                hex_tile.terrain_type = weight_manager.get_weighted_choice()
     
     def toggle_debug_mode(self):
         """Toggle debug mode for terrain visualization."""
