@@ -12,7 +12,7 @@ from .biome_mapper import get_tactical_generator
 class TacticalMap:
     """Manages the tactical map for combat encounters."""
     
-    def __init__(self, width: int = 20, height: int = 10, hex_size: int = None,
+    def __init__(self, width: int = 16, height: int = 10, hex_size: int = None,
                  strategic_terrain: str = "plain", custom_influence: float = None,
                  tactical_requirements: dict = None):
         from config.settings import HEX_SIZE

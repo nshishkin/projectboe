@@ -31,7 +31,7 @@ LIGHT_BROWN = (210, 180, 140)
 MIDNIGHT_BLUE = (25, 25, 112)
 
 # Tactical grid settings
-TACTICAL_GRID_WIDTH = 20  # 20 hexes horizontally
+TACTICAL_GRID_WIDTH = 16  # 16 hexes horizontally
 TACTICAL_GRID_HEIGHT = 10  # 10 hexes vertically
 HEX_SIZE = 40  # radius of each hexagon in pixels
 
