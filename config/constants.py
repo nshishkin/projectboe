@@ -98,3 +98,7 @@ TERRAIN_COLORS = {
     "water": (64, 164, 223),    # light blue
     "mountains": (105, 105, 105)  # gray
 }
+
+# Default hero spawn coordinates on strategic map
+DEFAULT_HERO_SPAWN_Q = 3
+DEFAULT_HERO_SPAWN_R = 3
