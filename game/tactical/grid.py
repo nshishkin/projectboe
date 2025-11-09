@@ -6,6 +6,8 @@ import pygame
 import math
 import random  # Импорт перемещен из функции generate_grid
 from typing import List, Tuple, Optional
+from ..core.terrain_manager import TerrainWeightManager
+from .biome_mapper import get_tactical_generator
 
 
 class HexTile:
@@ -48,27 +50,45 @@ class HexTile:
 class HexGrid:
     """Hexagonal grid system for tactical combat."""
     
-    def __init__(self, width: int = 10, height: int = 20, hex_size: int = None):
+    def __init__(self, width: int = 10, height: int = 20, hex_size: int = None,
+                 strategic_terrain: str = "plain", custom_influence: float = None,
+                 tactical_requirements: dict = None):
         from config.settings import HEX_SIZE
         # Use the default hex size from settings if not provided
         if hex_size is None:
             hex_size = HEX_SIZE
         self.width = width  # number of columns (q-axis)
         self.height = height  # number of rows (r-axis)
-        self.hex_size = hex_size  # radius of each hexagon
+        self.hex_size = hex_size # radius of each hexagon
         self.grid = {}  # dictionary to store hex tiles by (q, r) coordinates
         self.hexes = []  # list of all hex tiles
         
-        # Generate the hexagonal grid
-        self.generate_grid()
+        # Generate the hexagonal grid with configurable terrain
+        self.generate_grid(strategic_terrain, custom_influence, tactical_requirements)
         
-    def generate_grid(self):
-        """Generate the hexagonal grid with random terrain."""
+    def generate_grid(self, strategic_terrain: str = "plain",
+                     custom_influence: float = None,
+                     tactical_requirements: dict = None):
+        """Generate the hexagonal grid with configurable terrain."""
+        # Get the tactical generator
+        tactical_generator = get_tactical_generator()
+        
+        # Generate terrain weights based on strategic context
+        terrain_weights = tactical_generator.generate_for_strategic_hex(
+            strategic_terrain=strategic_terrain,
+            width=self.width,
+            height=self.height,
+            custom_influence=custom_influence,
+            tactical_requirements=tactical_requirements
+        )
+        
+        # Create a weight manager with the generated weights
+        weight_manager = TerrainWeightManager(terrain_weights)
+        
         for q in range(self.width):
             for r in range(self.height):
-                # Create a hex tile with random terrain
-                from config.constants import TERRAIN_TYPES
-                terrain = random.choice(TERRAIN_TYPES)
+                # Create a hex tile with terrain based on weighted selection
+                terrain = weight_manager.get_weighted_choice()
                 hex_tile = HexTile(q, r, terrain)
                 
                 # Calculate pixel coordinates with appropriate offsets for horizontal layout

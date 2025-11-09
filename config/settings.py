@@ -4,8 +4,8 @@ This file contains configurable game parameters like screen resolution, game spe
 """
 
 # Screen settings
-SCREEN_WIDTH = 1920
-SCREEN_HEIGHT = 1080
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
 FULLSCREEN = False
 
 # Game settings
@@ -14,7 +14,7 @@ GAME_SPEED = 1.0
 
 # Colors (RGB tuples)
 BLACK = (0, 0, 0)
-WHITE = (25, 255, 255)
+WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
@@ -33,12 +33,12 @@ MIDNIGHT_BLUE = (25, 25, 112)
 # Tactical grid settings
 TACTICAL_GRID_WIDTH = 20  # 20 hexes horizontally
 TACTICAL_GRID_HEIGHT = 10  # 10 hexes vertically
-HEX_SIZE = 30  # radius of each hexagon in pixels
+HEX_SIZE = 40  # radius of each hexagon in pixels
 
 # Strategic map settings
 STRATEGIC_MAP_WIDTH = 8
 STRATEGIC_MAP_HEIGHT = 8
-PROVINCE_SIZE = 64  # pixels per province
+PROVINCE_SIZE = 32 # pixels per province
 
 # UI settings
 UI_FONT_SIZE = 16
