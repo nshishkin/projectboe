@@ -35,6 +35,7 @@ class Game:
         # Phase 1: Basic state handling
         if self.current_state == 'menu':
             # TODO Menu logic(Phase 1 - just autotransition)
+            pass
         elif self.current_state == 'strategic':
             # TODO Strategic state update(Phase 2)
             pass
@@ -53,13 +54,13 @@ class Game:
         elif self.current_state == 'strategic':
             self._render_strategic()
         elif self.current_state == 'tactical':
-            self.render_tactical()
+            self._render_tactical()
     
     def _render_menu(self):
         """Render menu state (placeholder for Phase 1)."""
         font = pygame.font.Font(None, 36)
         text = font.render("MENU STATE - Press SPACE to start", True,TEXT_COLOR)
-        text_rect = text.get_rect(center=(self.screen.get_width()//2,self.screen.get_height)//2))
+        text_rect = text.get_rect(center=(self.screen.get_width()//2,self.screen.get_height()//2))
         self.screen.blit(text, text_rect)
 
     def _render_strategic(self):
@@ -81,7 +82,7 @@ class Game:
         Args:
             new_state: State name('menu', 'strategic', 'tactical')
         """
-        print(f`State transition: {self.current_state} -> {new_state}`)
+        print(f"State transition: {self.current_state} -> {new_state}")
         self.current_state = new_state
     
     def handle_event(self, event: pygame.event.Event):

@@ -19,7 +19,7 @@ def main():
     pygame.display.set_caption("BoE- Brothers of Eador")
 
     # Create clock for FPS control
-    clock=pygame.time.clock()
+    clock=pygame.time.Clock()
 
     #Create game instance
     game = Game(screen)
@@ -29,8 +29,8 @@ def main():
     while running:
         # Handle events:
         for event in pygame.event.get():
-            if event.type==pygame.Quit:
-                running=false
+            if event.type==pygame.QUIT:
+                running=False
             else:
                 # Pass other events to game state
                 game.handle_event(event)
@@ -49,5 +49,5 @@ def main():
     print("Shutting down..")
     pygame.quit()
 
-if _name_== "_main_":
+if __name__== "__main__":
     main()
