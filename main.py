@@ -13,13 +13,13 @@ def main():
 
     #Initialize Pygame
     pygame.init()
-
+    
     #Create display window
     screen=pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
     pygame.display.set_caption("BoE- Brothers of Eador")
 
     # Create clock for FPS control
-    clock=pygame.time.Clock()
+    clock=pygame.time.Clock() 
 
     #Create game instance
     game = Game(screen)
