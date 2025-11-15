@@ -8,6 +8,9 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 FPS = 60
 
+# Hex settings (for strategic and tactical maps)
+HEX_SIZE = 40  # Radius of hexagon (distance from center to corner)
+
 # Colors (R, G, B)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
