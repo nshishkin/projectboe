@@ -1,0 +1,7 @@
+# Core dependencies
+pygame>=2.5.0
+
+# Development tools (optional, uncomment if needed)
+# black>=23.0.0
+# ruff>=0.1.0
+# mypy>=1.0.0

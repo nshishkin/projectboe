@@ -44,6 +44,11 @@ ehthumbs.db
 # Pygame
 pygame-*.whl
 
+# Game Files
+save.json
+saves/
+*.sav
+
 # Logs
 *.log
 logs/

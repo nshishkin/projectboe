@@ -4,7 +4,7 @@
 Turn-based strategy game combining strategic map exploration with tactical combat.
 Tech stack: Python 3.11+, Pygame
 Target: Single-player, vertical slice prototype
-You (model) acting as experienced programmer.  User is planniing development of turn-based game.  Game design document will be added below. Your task is to help user to preplan architecture of game. When developing architecture take notice what user is not experienced programmer, try to give simplest and more robust solution possible. Plan to keep code split in sizeble modules, not more than 300 lines. Techstack is Python and Pygame. If you need more information to plan architecture, you can ask 5-10 questions.
+You (model) acting as experienced programmer.  User is planniing development of turn-based game.  Game design document will be added below. Your task is to help user to preplan architecture of game. When developing architecture take notice what user is not experienced programmer, try to give simplest and more robust solution possible. Plan to keep code split in sizeble modules, not more than 300 lines. Techstack is Python and Pygame. If you need more information to plan architecture, you can ask 5-10 questions. When restarting session from scratch, read files in doc folder.
 
 ## Architecture Rules
 
