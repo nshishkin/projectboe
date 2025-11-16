@@ -4,8 +4,8 @@ All screen dimensions, color, grid sizes, and defaul stats
 """
 
 # Screen settings
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
 FPS = 60
 
 # Hex settings (for strategic and tactical maps)
@@ -23,14 +23,14 @@ TEXT_COLOR = WHITE
 BORDER_COLOR = WHITE
 
 # Strategic map settings (Phase 2, but define now)
-MAP_ROWS = 8
+MAP_ROWS = 12
 MAP_COLS = 8
-PROVINCE_SIZE = 80  # pixels per province square
+ 
 
 # Tactical map settings (Phase 3, but define now)
 BATTLEFIELD_ROWS = 10
 BATTLEFIELD_COLS = 16
-TILE_SIZE = 40  # pixels per battlefield tile
+ 
 
 # Grid offset for centering
 MAP_OFFSET_X = 50

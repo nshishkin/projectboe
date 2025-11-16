@@ -1,7 +1,7 @@
 """
 Game data definitions.
 All content (terrain types, unit types, races, equipment) defined here for easy balancing.
-"""o
+"""
 
 TERRAIN_TYPES = {
     'plains': {'color': (144, 238, 144), 'name': 'Plains'},

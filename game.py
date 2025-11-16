@@ -6,6 +6,7 @@ Manages transitions between menu, strategic, and tactical states.
 import pygame
 
 from constants import BG_COLOR, TEXT_COLOR
+from strategic.strategic_state import StrategicState
 
 class Game:
     """
@@ -23,24 +24,21 @@ class Game:
         self.current_state = 'menu'
         self.running = True
 
-        # Phase 1: Just placeholder states
-        # Phase 2: Will initialize StrategicState, TacticalState etc.
-        self.strategic_state = None
+        # Create strategic state (Phase 2)
+        self.strategic_state = StrategicState(self.screen)
+        
+        # Phase 3: Will initialize TacticalState
         self.tactical_state = None
 
         print(f"Game initialized in state: {self.current_state}")
     
     def update(self):
         """Update current game state logic."""
-        # Phase 1: Basic state handling
         if self.current_state == 'menu':
-            # TODO Menu logic(Phase 1 - just autotransition)
             pass
         elif self.current_state == 'strategic':
-            # TODO Strategic state update(Phase 2)
-            pass
+            self.strategic_state.update()  # Call strategic update
         elif self.current_state == 'tactical':
-            # TODO: Tactical state update(Phase 3)
             pass
     
     def render(self):
@@ -48,11 +46,10 @@ class Game:
         # Clear screen
         self.screen.fill(BG_COLOR)
 
-        # Phase 1: Simple text rendering to show current state
         if self.current_state == 'menu':
             self._render_menu()
         elif self.current_state == 'strategic':
-            self._render_strategic()
+            self.strategic_state.render()  # Call strategic render
         elif self.current_state == 'tactical':
             self._render_tactical()
     
@@ -86,10 +83,6 @@ class Game:
         self.current_state = new_state
     
     def handle_event(self, event: pygame.event.Event):
-        """ Handle input events for current state.
-        Args:
-            event: Pygame event to process
-        """
         # Phase 1: Simple keyboard test for state transitions
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE:
@@ -98,3 +91,8 @@ class Game:
             elif event.key == pygame.K_ESCAPE:
                 if self.current_state != 'menu':
                     self.change_state('menu')
+        
+        # Phase 2: Handle mouse clicks in strategic state
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if self.current_state == 'strategic':
+                self.strategic_state.handle_click(event.pos)
