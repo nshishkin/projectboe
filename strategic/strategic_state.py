@@ -10,22 +10,24 @@ from strategic.hero import Hero
 from strategic.input_handler import pixel_to_hex, hex_to_pixel
 from data_definitions import TERRAIN_TYPES
 from constants import (
-    HEX_SIZE, MAP_ROWS, MAP_COLS, 
+    STRATEGIC_HEX_SIZE, MAP_ROWS, MAP_COLS,
     BG_COLOR, WHITE, BLACK
 )
 
 class StrategicState:
-    def __init__(self, screen):
+    def __init__(self, screen, game):
         """
         Initialize strategic state with map and hero.
-        
+
         Args:
             screen: Pygame display surface to render to
+            game: Reference to Game instance (for triggering combat)
         """
         self.screen = screen
+        self.game = game
         self.map_grid = generate_map(MAP_ROWS, MAP_COLS)
         self.hero = Hero(0, 0)  # Start at top-left for now
-        
+
         print(f"Strategic state initialized with {MAP_ROWS}x{MAP_COLS} map")
         # Debug: print all province centers
         # for row in self.map_grid:
@@ -53,8 +55,8 @@ class StrategicState:
         corners = []
         for i in range(6):
             angle = math.pi / 3 * i  # 60 degrees between each corner
-            x = center_x + HEX_SIZE * math.cos(angle)
-            y = center_y + HEX_SIZE * math.sin(angle)
+            x = center_x + STRATEGIC_HEX_SIZE * math.cos(angle)
+            y = center_y + STRATEGIC_HEX_SIZE * math.sin(angle)
             corners.append((x, y))
         return corners
 
@@ -117,3 +119,23 @@ class StrategicState:
                 # Move hero to clicked province
                 self.hero.move_to(grid_x, grid_y)
                 print(f"Clicked province: {province.terrain_type} at ({grid_x}, {grid_y})")
+
+                # Phase 3: Test combat trigger (every click starts combat)
+                # Phase 4+: Check province.encounter instead
+                self._trigger_test_combat(province)
+
+    def _trigger_test_combat(self, province):
+        """
+        Trigger test combat (Phase 3 only).
+
+        Phase 4+: Replace with proper encounter system.
+
+        Args:
+            province: Province where combat happens
+        """
+        # Test armies
+        player_army = ['infantry', 'infantry', 'ranged']
+        enemy_army = ['infantry', 'cavalry']
+
+        # Start combat
+        self.game.start_combat(player_army, enemy_army, province.terrain_type)

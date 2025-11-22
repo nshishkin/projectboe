@@ -1,13 +1,13 @@
 """
 Input handler for converting mouse coordinates to hex grid positions.
-Uses offset coordinate system for hexagons.
+Uses offset coordinate system for hexagons (strategic map).
 """
 import math
-from constants import MAP_OFFSET_X, MAP_OFFSET_Y, HEX_SIZE, MAP_COLS, MAP_ROWS
+from constants import MAP_OFFSET_X, MAP_OFFSET_Y, STRATEGIC_HEX_SIZE, MAP_COLS, MAP_ROWS
 
-# Calculate hex dimensions from HEX_SIZE
-HEX_WIDTH = HEX_SIZE * 2
-HEX_HEIGHT = HEX_SIZE * math.sqrt(3)  # Height of hexagon
+# Calculate hex dimensions from STRATEGIC_HEX_SIZE
+HEX_WIDTH = STRATEGIC_HEX_SIZE * 2
+HEX_HEIGHT = STRATEGIC_HEX_SIZE * math.sqrt(3)  # Height of hexagon
 
 
 def pixel_to_hex(mouse_x: int, mouse_y: int) -> tuple[int, int] | None:
