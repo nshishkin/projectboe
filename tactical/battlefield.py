@@ -3,14 +3,14 @@ Battlefield manager for tactical combat.
 Manages the combat grid, unit placement, and battlefield state.
 """
 from tactical.combat_unit import CombatUnit
-from constants import BATTLEFIELD_ROWS, BATTLEFIELD_COLS
+from constants import BATTLEFIELD_ROWS, BATTLEFIELD_COLS, DEPLOYMENT_COLUMNS
 
 
 class Battlefield:
     """
     Represents the tactical battlefield grid.
 
-    10x16 hex grid where combat takes place.
+    Configurable hex grid where combat takes place.
     Units are placed on opposite sides and fight until one side is eliminated.
     """
 
@@ -48,9 +48,9 @@ class Battlefield:
         """
         Place armies on the battlefield.
 
-        Player units placed on left side (columns 0-2)
-        Enemy units placed on right side (columns 13-15)
-        Units are arranged in rows of 3.
+        Player units placed on left side (first DEPLOYMENT_COLUMNS columns)
+        Enemy units placed on right side (last DEPLOYMENT_COLUMNS columns)
+        Units are arranged in rows based on DEPLOYMENT_COLUMNS.
 
         Args:
             player_army: List of unit types for player (e.g., ['infantry', 'cavalry'])
@@ -60,17 +60,20 @@ class Battlefield:
         self.player_units.clear()
         self.enemy_units.clear()
 
-        # Place player units on left (cols 0-2)
+        # Calculate enemy starting column (last DEPLOYMENT_COLUMNS columns)
+        enemy_start_col = self.cols - DEPLOYMENT_COLUMNS
+
+        # Place player units on left (first DEPLOYMENT_COLUMNS columns)
         for i, unit_type in enumerate(player_army):
-            x = i % 3  # Column: 0, 1, 2, 0, 1, 2, ...
-            y = i // 3  # Row: 0, 0, 0, 1, 1, 1, 2, 2, 2, ...
+            x = i % DEPLOYMENT_COLUMNS  # Column: 0, 1, 2, 0, 1, 2, ...
+            y = i // DEPLOYMENT_COLUMNS  # Row: 0, 0, 0, 1, 1, 1, 2, 2, 2, ...
             unit = CombatUnit(unit_type, x, y, is_player=True)
             self.player_units.append(unit)
 
-        # Place enemy units on right (cols 13-15)
+        # Place enemy units on right (last DEPLOYMENT_COLUMNS columns)
         for i, unit_type in enumerate(enemy_army):
-            x = 13 + (i % 3)  # Column: 13, 14, 15, 13, 14, 15, ...
-            y = i // 3
+            x = enemy_start_col + (i % DEPLOYMENT_COLUMNS)
+            y = i // DEPLOYMENT_COLUMNS
             unit = CombatUnit(unit_type, x, y, is_player=False)
             self.enemy_units.append(unit)
 

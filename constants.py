@@ -1,6 +1,6 @@
 """
 Game constants and configuration values.
-All screen dimensions, color, grid sizes, and defaul stats
+All screen dimensions, color, grid sizes, and default stats
 """
 
 # Screen settings
@@ -29,8 +29,9 @@ MAP_COLS = 8
  
 
 # Tactical map settings (Phase 3, but define now)
-BATTLEFIELD_ROWS = 10
-BATTLEFIELD_COLS = 16
+BATTLEFIELD_ROWS = 20
+BATTLEFIELD_COLS = 20
+DEPLOYMENT_COLUMNS = 3  # Number of columns for unit deployment on each side
  
 
 # Strategic map offsets

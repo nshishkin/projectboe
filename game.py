@@ -11,7 +11,7 @@ from tactical.tactical_state import TacticalState
 
 class Game:
     """
-    Game state machime that controls game flow.
+    Game state machine that controls game flow.
     'menu' -> 'strategic' -> 'tactical' -> back to 'strategic'
     """
 
@@ -59,22 +59,8 @@ class Game:
     def _render_menu(self):
         """Render menu state (placeholder for Phase 1)."""
         font = pygame.font.Font(None, 36)
-        text = font.render("MENU STATE - Press SPACE to start", True,TEXT_COLOR)
-        text_rect = text.get_rect(center=(self.screen.get_width()//2,self.screen.get_height()//2))
-        self.screen.blit(text, text_rect)
-
-    def _render_strategic(self):
-        """Render strategic state (placeholder for Phase 1)."""
-        font = pygame.font.Font(None, 36)
-        text = font.render("STRATEGIC STATE - Map goes here", True, TEXT_COLOR)
-        text_rect = text.get_rect(center=(self.screen.get_width() // 2, self.screen.get_height() // 2))
-        self.screen.blit(text, text_rect)
-
-    def _render_tactical(self):
-        """Render tactical state (placeholder for Phase 1)."""
-        font = pygame.font.Font(None, 36)
-        text = font.render("TACTICAL STATE - Combat goes here", True, TEXT_COLOR)
-        text_rect = text.get_rect(center=(self.screen.get_width() // 2, self.screen.get_height() // 2))
+        text = font.render("MENU STATE - Press SPACE to start", True, TEXT_COLOR)
+        text_rect = text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2))
         self.screen.blit(text, text_rect)
 
     def change_state(self, new_state: str):
