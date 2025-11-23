@@ -42,12 +42,14 @@ class CombatUnit:
         self.initiative = stats['initiative']
         self.morale = stats['morale']
         self.base_damage = stats['base_damage']
+        self.movement_points = stats['movement_points']
 
         # Visual color based on ownership
         self.color = stats['color'] if is_player else stats['enemy_color']
 
         # Combat state
         self.has_acted = False  # Has unit acted this turn
+        self.current_movement = self.movement_points  # Movement points available this turn
 
     def take_damage(self, damage: int) -> bool:
         """

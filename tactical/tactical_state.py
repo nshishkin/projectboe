@@ -7,10 +7,11 @@ import math
 
 from tactical.battlefield import Battlefield
 from tactical.combat_unit import CombatUnit
+from tactical.movement import get_reachable_cells
 from config.constants import (
     TACTICAL_HEX_SIZE, BATTLEFIELD_ROWS, BATTLEFIELD_COLS,
     BATTLEFIELD_OFFSET_X, BATTLEFIELD_OFFSET_Y,
-    BG_COLOR, WHITE, BLACK, GRAY, SCREEN_HEIGHT,
+    BG_COLOR, WHITE, BLACK, GRAY, DARK_GRAY, SCREEN_HEIGHT,
     BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
     BUTTON_HEIGHT, BUTTON_BORDER_WIDTH
 )
@@ -46,6 +47,8 @@ class TacticalState:
 
         # UI state
         self.selected_unit: CombatUnit | None = None
+        self.info_unit: CombatUnit | None = None  # Unit to display info for
+        self.reachable_cells: dict[tuple[int, int], int] = {}  # Valid movement targets and their distances
         self.combat_ended = False
         self.winner = None  # 'player' or 'enemy'
         self.show_victory_window = False
@@ -123,22 +126,48 @@ class TacticalState:
         x, y = grid_coords
         clicked_unit = self.battlefield.get_unit_at(x, y)
 
-        # Phase 3: Simple click logic (no movement)
+        # Show info for any clicked unit (player or enemy)
+        if clicked_unit:
+            self.info_unit = clicked_unit
+            print(f"Showing info for {clicked_unit.name}")
+
+        # Phase 4: Movement and combat logic
         if self.selected_unit is None:
             # First click: select player unit
             if clicked_unit and clicked_unit.is_player:
                 self.selected_unit = clicked_unit
                 print(f"Selected {clicked_unit.name} at ({x}, {y})")
+
+                # Calculate reachable cells for movement (only if unit has movement left)
+                if clicked_unit.current_movement > 0:
+                    self._calculate_reachable_cells()
+                else:
+                    print(f"{clicked_unit.name} has no movement points left")
         else:
-            # Second click: attack enemy or deselect
+            # Have a selected unit - check what was clicked
             if clicked_unit and not clicked_unit.is_player:
                 # Attack enemy
                 self._execute_attack(self.selected_unit, clicked_unit)
                 self.selected_unit = None
+                self.reachable_cells.clear()
+            elif (x, y) in self.reachable_cells:
+                # Move to reachable cell
+                distance = self.reachable_cells[(x, y)]
+                self._move_unit(self.selected_unit, x, y, distance)
+
+                # Check if unit has movement left
+                if self.selected_unit.current_movement > 0:
+                    # Recalculate reachable cells
+                    self._calculate_reachable_cells()
+                else:
+                    # No movement left, deselect
+                    self.selected_unit = None
+                    self.reachable_cells.clear()
             else:
                 # Deselect (clicked empty space or own unit)
                 print("Deselected")
                 self.selected_unit = None
+                self.reachable_cells.clear()
 
     def _execute_attack(self, attacker: CombatUnit, target: CombatUnit):
         """
@@ -158,12 +187,52 @@ class TacticalState:
         if not target.is_alive():
             self.turn_order = [u for u in self.turn_order if u.is_alive()]
 
+    def _calculate_reachable_cells(self):
+        """Calculate cells reachable by selected unit based on movement points."""
+        if not self.selected_unit:
+            return
+
+        # Get all occupied positions as blocked cells
+        blocked = set()
+        for unit in self.battlefield.get_all_units():
+            if unit != self.selected_unit:  # Don't block own position
+                blocked.add((unit.x, unit.y))
+
+        # Calculate reachable cells using BFS pathfinding
+        self.reachable_cells = get_reachable_cells(
+            self.selected_unit.x,
+            self.selected_unit.y,
+            self.selected_unit.current_movement,
+            blocked
+        )
+
+        print(f"Found {len(self.reachable_cells)} reachable cells")
+
+    def _move_unit(self, unit: CombatUnit, target_x: int, target_y: int, distance: int):
+        """
+        Move unit to target position and consume movement points.
+
+        Args:
+            unit: Unit to move
+            target_x: Target grid column
+            target_y: Target grid row
+            distance: Distance to target (movement cost)
+        """
+        print(f"Moving {unit.name} from ({unit.x}, {unit.y}) to ({target_x}, {target_y}) (cost: {distance})")
+        unit.move_to(target_x, target_y)
+        unit.current_movement -= distance
+        print(f"{unit.name} has {unit.current_movement} movement points left")
+
     def render(self):
         """Render the battlefield and units."""
         self.screen.fill(BG_COLOR)
 
         # Draw battlefield hexes
         self._draw_battlefield()
+
+        # Draw reachable cells (before units so they're not on top)
+        if self.reachable_cells:
+            self._draw_reachable_cells()
 
         # Draw units
         self._draw_units()
@@ -175,6 +244,9 @@ class TacticalState:
         # Draw hex coordinates if enabled
         if self.show_hex_coords:
             self._draw_hex_coords()
+
+        # Draw unit info panel
+        self._draw_unit_info_panel()
 
         # Draw debug buttons (if combat not ended)
         if not self.combat_ended:
@@ -247,6 +319,28 @@ class TacticalState:
 
         # Draw thick white border
         pygame.draw.polygon(self.screen, WHITE, corners, 3)
+
+    def _draw_reachable_cells(self):
+        """Draw green highlights on cells the selected unit can move to."""
+        for (x, y), distance in self.reachable_cells.items():
+            center_x, center_y = self._hex_to_pixel(x, y)
+            corners = self._get_hex_corners(center_x, center_y)
+
+            # Draw semi-transparent green overlay
+            # Lighter green for cells closer to movement limit
+            alpha = 100 if distance == 1 else 60
+            green_color = (0, 255, 0)
+
+            # Create surface for transparency
+            overlay = pygame.Surface((TACTICAL_HEX_SIZE * 3, TACTICAL_HEX_SIZE * 3), pygame.SRCALPHA)
+            overlay_corners = [(cx - center_x + TACTICAL_HEX_SIZE * 1.5,
+                               cy - center_y + TACTICAL_HEX_SIZE * 1.5)
+                              for cx, cy in corners]
+            pygame.draw.polygon(overlay, (*green_color, alpha), overlay_corners)
+
+            # Blit to screen
+            self.screen.blit(overlay, (int(center_x - TACTICAL_HEX_SIZE * 1.5),
+                                      int(center_y - TACTICAL_HEX_SIZE * 1.5)))
 
     def _draw_victory_screen(self):
         """Draw victory window with OK button."""
@@ -442,3 +536,70 @@ class TacticalState:
 
                 # Draw coordinate text
                 self.screen.blit(text_surf, text_rect)
+
+    def _draw_unit_info_panel(self):
+        """Draw unit information panel on the right side of the battlefield."""
+        if not self.info_unit:
+            return  # No unit selected for info display
+
+        # Panel dimensions and position
+        panel_x = 550
+        panel_y = 50
+        panel_width = 250
+        panel_height = 400
+
+        # Draw panel background
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+        pygame.draw.rect(self.screen, DARK_GRAY, panel_rect)
+        pygame.draw.rect(self.screen, WHITE, panel_rect, 2)  # Border
+
+        # Font for text
+        title_font = pygame.font.Font(None, 32)
+        text_font = pygame.font.Font(None, 24)
+
+        y_offset = panel_y + 10
+
+        # Unit name
+        name_text = title_font.render(self.info_unit.name, True, WHITE)
+        self.screen.blit(name_text, (panel_x + 10, y_offset))
+        y_offset += 40
+
+        # Side (Player/Enemy)
+        side_text = "Player" if self.info_unit.is_player else "Enemy"
+        side_color = (100, 255, 100) if self.info_unit.is_player else (255, 100, 100)
+        side_surf = text_font.render(f"Side: {side_text}", True, side_color)
+        self.screen.blit(side_surf, (panel_x + 10, y_offset))
+        y_offset += 30
+
+        # HP with bar
+        hp_text = text_font.render(f"HP: {self.info_unit.current_hp}/{self.info_unit.max_hp}", True, WHITE)
+        self.screen.blit(hp_text, (panel_x + 10, y_offset))
+        y_offset += 25
+
+        # HP bar
+        bar_width = panel_width - 20
+        bar_height = 10
+        bar_x = panel_x + 10
+        bar_y = y_offset
+        # Background (red)
+        pygame.draw.rect(self.screen, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
+        # Foreground (green, scaled by HP%)
+        hp_percentage = self.info_unit.get_hp_percentage()
+        pygame.draw.rect(self.screen, (0, 255, 0), (bar_x, bar_y, int(bar_width * hp_percentage), bar_height))
+        y_offset += 20
+
+        # Stats
+        stats = [
+            f"Movement: {self.info_unit.current_movement}/{self.info_unit.movement_points}",
+            f"Melee Attack: {self.info_unit.melee_attack}",
+            f"Melee Defence: {self.info_unit.melee_defence}",
+            f"Initiative: {self.info_unit.initiative}",
+            f"Stamina: {self.info_unit.stamina}",
+            f"Morale: {self.info_unit.morale}",
+            f"Base Damage: {self.info_unit.base_damage}"
+        ]
+
+        for stat in stats:
+            stat_surf = text_font.render(stat, True, WHITE)
+            self.screen.blit(stat_surf, (panel_x + 10, y_offset))
+            y_offset += 30

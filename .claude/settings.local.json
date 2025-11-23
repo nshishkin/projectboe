@@ -3,7 +3,8 @@
     "allow": [
       "Bash(python -m py_compile:*)",
       "Bash(python -c:*)",
-      "Bash(python main.py:*)"
+      "Bash(python main.py:*)",
+      "Bash(timeout 5 python:*)"
     ],
     "deny": [],
     "ask": []
