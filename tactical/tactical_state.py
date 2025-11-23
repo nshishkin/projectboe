@@ -49,10 +49,12 @@ class TacticalState:
         self.combat_ended = False
         self.winner = None  # 'player' or 'enemy'
         self.show_victory_window = False
+        self.show_hex_coords = False  # Debug mode for showing hex coordinates
 
-        # Debug button (bottom-left)
+        # Debug buttons (bottom)
         button_y = SCREEN_HEIGHT - BUTTON_HEIGHT - 10
         self.debug_finish_button = pygame.Rect(50, button_y, 200, BUTTON_HEIGHT)
+        self.show_coords_button = pygame.Rect(270, button_y, 200, BUTTON_HEIGHT)
 
         # Victory window OK button (centered)
         self.ok_button = pygame.Rect(0, 0, 150, BUTTON_HEIGHT)  # Position calculated in render
@@ -101,10 +103,13 @@ class TacticalState:
                 self._handle_victory_ok()
             return
 
-        # Check debug finish button
+        # Check debug buttons
         if not self.combat_ended:
             if self.debug_finish_button.collidepoint(mouse_pos):
                 self._handle_debug_finish()
+                return
+            elif self.show_coords_button.collidepoint(mouse_pos):
+                self._toggle_hex_coords()
                 return
 
         if self.combat_ended:
@@ -167,9 +172,13 @@ class TacticalState:
         if self.selected_unit:
             self._highlight_unit(self.selected_unit)
 
-        # Draw debug button (if combat not ended)
+        # Draw hex coordinates if enabled
+        if self.show_hex_coords:
+            self._draw_hex_coords()
+
+        # Draw debug buttons (if combat not ended)
         if not self.combat_ended:
-            self._draw_debug_button()
+            self._draw_debug_buttons()
 
         # Draw victory window
         if self.show_victory_window:
@@ -370,10 +379,14 @@ class TacticalState:
         text_rect = text_surf.get_rect(center=rect.center)
         self.screen.blit(text_surf, text_rect)
 
-    def _draw_debug_button(self):
-        """Draw debug finish battle button."""
+    def _draw_debug_buttons(self):
+        """Draw debug buttons."""
         mouse_pos = pygame.mouse.get_pos()
         self._draw_button(self.debug_finish_button, "Finish battle (debug)", mouse_pos)
+
+        # Show coords button text changes based on state
+        coords_text = "Hide hex coords" if self.show_hex_coords else "Show hex coords"
+        self._draw_button(self.show_coords_button, coords_text, mouse_pos)
 
     def _handle_debug_finish(self):
         """Handle debug finish button - kill all enemies and show victory."""
@@ -395,3 +408,30 @@ class TacticalState:
         """Handle OK button in victory window - return to strategic map."""
         print("Returning to strategic map")
         self.game.change_state('strategic')
+
+    def _toggle_hex_coords(self):
+        """Toggle display of hex coordinates on/off."""
+        self.show_hex_coords = not self.show_hex_coords
+        status = "ON" if self.show_hex_coords else "OFF"
+        print(f"Hex coordinates display: {status}")
+
+    def _draw_hex_coords(self):
+        """Draw coordinates on each battlefield hex."""
+        font = pygame.font.Font(None, 16)  # Small font for coordinates
+
+        for row in range(BATTLEFIELD_ROWS):
+            for col in range(BATTLEFIELD_COLS):
+                # Get hex center position
+                center_x, center_y = self._hex_to_pixel(col, row)
+
+                # Create coordinate text "x,y"
+                coord_text = f"{col},{row}"
+                text_surf = font.render(coord_text, True, WHITE)
+                text_rect = text_surf.get_rect(center=(int(center_x), int(center_y)))
+
+                # Draw black background for better visibility
+                background_rect = text_rect.inflate(4, 2)
+                pygame.draw.rect(self.screen, BLACK, background_rect)
+
+                # Draw coordinate text
+                self.screen.blit(text_surf, text_rect)

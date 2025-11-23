@@ -35,10 +35,14 @@ class StrategicState:
         # Turn counter
         self.current_turn = 1
 
+        # Debug mode for showing hex coordinates
+        self.show_hex_coords = False
+
         # UI Buttons (positioned at bottom of screen)
         button_y = SCREEN_HEIGHT - BUTTON_HEIGHT - 10
         self.end_turn_button = pygame.Rect(50, button_y, 150, BUTTON_HEIGHT)
         self.start_combat_button = pygame.Rect(220, button_y, 180, BUTTON_HEIGHT)
+        self.show_coords_button = pygame.Rect(420, button_y, 200, BUTTON_HEIGHT)
 
         print(f"Strategic state initialized with {MAP_ROWS}x{MAP_COLS} map")
         # Debug: print all province centers
@@ -112,6 +116,10 @@ class StrategicState:
         # Draw hero on top
         self._draw_hero()
 
+        # Draw hex coordinates if enabled
+        if self.show_hex_coords:
+            self._draw_hex_coords()
+
         # Draw UI (buttons and turn counter)
         self._draw_ui()
 
@@ -169,6 +177,10 @@ class StrategicState:
         self._draw_button(self.end_turn_button, "End Turn", mouse_pos)
         self._draw_button(self.start_combat_button, "Start Combat", mouse_pos)
 
+        # Show coords button text changes based on state
+        coords_text = "Hide hex coords" if self.show_hex_coords else "Show hex coords"
+        self._draw_button(self.show_coords_button, coords_text, mouse_pos)
+
     def _draw_button(self, rect: pygame.Rect, text: str, mouse_pos: tuple[int, int]):
         """Draw button with hover effect."""
         # Hover detection
@@ -195,6 +207,9 @@ class StrategicState:
         elif self.start_combat_button.collidepoint(mouse_pos):
             self._start_test_combat()
             return True
+        elif self.show_coords_button.collidepoint(mouse_pos):
+            self._toggle_hex_coords()
+            return True
         return False
 
     def _end_turn(self):
@@ -208,3 +223,30 @@ class StrategicState:
         enemy_army = TEST_ENEMY_ARMY
         terrain = 'plains'
         self.game.start_combat(player_army, enemy_army, terrain)
+
+    def _toggle_hex_coords(self):
+        """Toggle display of hex coordinates on/off."""
+        self.show_hex_coords = not self.show_hex_coords
+        status = "ON" if self.show_hex_coords else "OFF"
+        print(f"Hex coordinates display: {status}")
+
+    def _draw_hex_coords(self):
+        """Draw coordinates on each hex."""
+        font = pygame.font.Font(None, 18)  # Small font for coordinates
+
+        for row in self.map_grid:
+            for province in row:
+                # Get hex center position
+                center_x, center_y = hex_to_pixel(province.x, province.y)
+
+                # Create coordinate text "x,y"
+                coord_text = f"{province.x},{province.y}"
+                text_surf = font.render(coord_text, True, WHITE)
+                text_rect = text_surf.get_rect(center=(int(center_x), int(center_y)))
+
+                # Draw black background for better visibility
+                background_rect = text_rect.inflate(4, 2)
+                pygame.draw.rect(self.screen, BLACK, background_rect)
+
+                # Draw coordinate text
+                self.screen.blit(text_surf, text_rect)
