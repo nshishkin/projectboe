@@ -307,11 +307,13 @@ class TacticalState:
         hex_width = TACTICAL_HEX_SIZE * 2
         hex_height = TACTICAL_HEX_SIZE * math.sqrt(3)
 
-        # Odd rows offset
-        x_offset = (hex_width * 3/4) if grid_y % 2 == 1 else 0
+        # Odd rows offset by height
+        y_offset = (hex_height/2) if grid_x % 2 == 1 else 0
 
-        pixel_x = BATTLEFIELD_OFFSET_X + grid_x * (hex_width * 1.5) + x_offset + hex_width / 2
-        pixel_y = BATTLEFIELD_OFFSET_Y + (hex_height/2) + grid_y * (hex_height/2)
+        # Horizontal spacing
+        pixel_x = BATTLEFIELD_OFFSET_X + (grid_x+1) * (hex_width * 3/4) 
+        # Vertical spacing (adjusted for proper interlocking)
+        pixel_y = BATTLEFIELD_OFFSET_Y +  (grid_y+1) * hex_height - y_offset
 
         return (int(pixel_x), int(pixel_y))
 
@@ -319,6 +321,7 @@ class TacticalState:
         """
         Convert pixel coordinates to battlefield grid coordinates.
 
+        Uses offset coordinate system where odd columns are shifted down.
         Same logic as strategic map but with TACTICAL_HEX_SIZE and BATTLEFIELD bounds.
 
         Args:
@@ -334,10 +337,14 @@ class TacticalState:
         x = mouse_x - BATTLEFIELD_OFFSET_X
         y = mouse_y - BATTLEFIELD_OFFSET_Y
 
-        # Approximate position
-        row = int((y - hex_height/2) / (hex_height/2))
-        x_offset = (hex_width * 3/4) if row % 2 == 1 else 0
-        col = int((x - x_offset) / (hex_width * 1.5))
+        # Calculate approximate column (accounting for +1 in _hex_to_pixel)
+        col = int(x / (hex_width * 3/4)) - 1
+
+        # Calculate y_offset based on column parity
+        y_offset = (hex_height/2) if col % 2 == 1 else 0
+
+        # Calculate approximate row (accounting for +1 in _hex_to_pixel)
+        row = int((y + y_offset) / hex_height) - 1
 
         # Check 9 candidates for accuracy
         candidates = [

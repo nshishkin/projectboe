@@ -10,7 +10,7 @@ FPS = 60
 
 # Hex settings
 STRATEGIC_HEX_SIZE = 40  # Radius for strategic map hexagons
-TACTICAL_HEX_SIZE = 20   # Radius for tactical battlefield hexagons
+TACTICAL_HEX_SIZE = 30   # Radius for tactical battlefield hexagons
 
 # Colors (R, G, B)
 BLACK = (0, 0, 0)
@@ -31,13 +31,13 @@ BUTTON_HEIGHT = 40
 BUTTON_BORDER_WIDTH = 2
 
 # Strategic map settings (Phase 2, but define now)
-MAP_ROWS = 12
-MAP_COLS = 8
+MAP_ROWS = 6
+MAP_COLS = 12
 
 
 # Tactical map settings (Phase 3, but define now)
-BATTLEFIELD_ROWS = 20
-BATTLEFIELD_COLS = 20
+BATTLEFIELD_ROWS = 10
+BATTLEFIELD_COLS = 10
 DEPLOYMENT_COLUMNS = 3  # Number of columns for unit deployment on each side
 
 

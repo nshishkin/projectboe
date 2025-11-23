@@ -14,7 +14,7 @@ def pixel_to_hex(mouse_x: int, mouse_y: int) -> tuple[int, int] | None:
     """
     Convert pixel coordinates to hex grid coordinates.
 
-    Uses offset coordinate system where odd rows are shifted right.
+    Uses offset coordinate system where odd columns are shifted down.
     Checks nearest hexes for accurate detection.
 
     Args:
@@ -28,10 +28,14 @@ def pixel_to_hex(mouse_x: int, mouse_y: int) -> tuple[int, int] | None:
     x = mouse_x - MAP_OFFSET_X
     y = mouse_y - MAP_OFFSET_Y
 
-    # Calculate approximate position
-    row = int((y - HEX_HEIGHT/2) / (HEX_HEIGHT/2))
-    x_offset = (HEX_WIDTH * 3/4) if row % 2 == 1 else 0
-    col = int((x - x_offset) / (HEX_WIDTH * 1.5))
+    # Calculate approximate column (accounting for +1 in hex_to_pixel)
+    col = int(x / (HEX_WIDTH * 3/4)) - 1
+
+    # Calculate y_offset based on column parity
+    y_offset = (HEX_HEIGHT/2) if col % 2 == 1 else 0
+
+    # Calculate approximate row (accounting for +1 in hex_to_pixel)
+    row = int((y + y_offset) / HEX_HEIGHT) - 1
 
     # Generate list of candidate hexes (3x3 area around approximate position)
     candidates = [
@@ -58,7 +62,6 @@ def pixel_to_hex(mouse_x: int, mouse_y: int) -> tuple[int, int] | None:
 
     return best
 
-
 def hex_to_pixel(grid_x: int, grid_y: int) -> tuple[int, int]:
     """
     Convert hex grid coordinates to pixel coordinates (center of hex).
@@ -70,13 +73,13 @@ def hex_to_pixel(grid_x: int, grid_y: int) -> tuple[int, int]:
     Returns:
         Tuple of (x, y) pixel coordinates for hex center
     """
-    # Odd rows are offset by 3/4 of hex width
-    x_offset = (HEX_WIDTH * 3/4) if grid_y % 2 == 1 else 0
+    # Odd rows are offset by height
+    y_offset = (HEX_HEIGHT/2) if grid_x % 2 == 1 else 0
 
-    # Horizontal spacing is 1.5 * width (hexes overlap!)
-    pixel_x = MAP_OFFSET_X + grid_x * (HEX_WIDTH * 1.5) + x_offset + HEX_WIDTH / 2
+    # Horizontal spacing
+    pixel_x = MAP_OFFSET_X + (grid_x+1) * (HEX_WIDTH * 3/4) 
 
     # Vertical spacing (adjusted for proper interlocking)
-    pixel_y = MAP_OFFSET_Y + (HEX_HEIGHT/2) +  grid_y * (HEX_HEIGHT/2) 
+    pixel_y = MAP_OFFSET_Y +  (grid_y+1) * HEX_HEIGHT - y_offset
 
     return (int(pixel_x), int(pixel_y))
