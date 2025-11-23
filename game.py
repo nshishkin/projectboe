@@ -5,7 +5,7 @@ Manages transitions between menu, strategic, and tactical states.
 
 import pygame
 
-from constants import BG_COLOR, TEXT_COLOR
+from config.constants import BG_COLOR, TEXT_COLOR
 from strategic.strategic_state import StrategicState
 from tactical.tactical_state import TacticalState
 
@@ -84,7 +84,7 @@ class Game:
             enemy_army: List of unit types for enemy
             terrain: Terrain type from province
         """
-        self.tactical_state = TacticalState(self.screen, player_army, enemy_army, terrain)
+        self.tactical_state = TacticalState(self.screen, self, player_army, enemy_army, terrain)
         self.change_state('tactical')
     
     def handle_event(self, event: pygame.event.Event):

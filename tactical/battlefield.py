@@ -3,7 +3,7 @@ Battlefield manager for tactical combat.
 Manages the combat grid, unit placement, and battlefield state.
 """
 from tactical.combat_unit import CombatUnit
-from constants import BATTLEFIELD_ROWS, BATTLEFIELD_COLS, DEPLOYMENT_COLUMNS
+from config.constants import BATTLEFIELD_ROWS, BATTLEFIELD_COLS, DEPLOYMENT_COLUMNS
 
 
 class Battlefield:

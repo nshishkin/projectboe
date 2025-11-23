@@ -8,8 +8,10 @@ import math
 from strategic.map_generator import generate_map, get_province_at
 from strategic.hero import Hero
 from strategic.input_handler import pixel_to_hex, hex_to_pixel
-from data_definitions import TERRAIN_TYPES
-from constants import (
+from config.data_definitions import TERRAIN_TYPES
+from config.player_data import HERO_ARMY
+from config.enemy import TEST_ENEMY_ARMY
+from config.constants import (
     STRATEGIC_HEX_SIZE, MAP_ROWS, MAP_COLS,
     BG_COLOR, WHITE, BLACK, SCREEN_HEIGHT,
     BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
@@ -146,9 +148,9 @@ class StrategicState:
         Args:
             province: Province where combat happens
         """
-        # Test armies
-        player_army = ['infantry', 'infantry', 'ranged']
-        enemy_army = ['infantry', 'cavalry']
+        # Use predefined armies from data files
+        player_army = HERO_ARMY
+        enemy_army = TEST_ENEMY_ARMY
 
         # Start combat
         self.game.start_combat(player_army, enemy_army, province.terrain_type)
@@ -202,7 +204,7 @@ class StrategicState:
 
     def _start_test_combat(self):
         """Start test combat (manual trigger)."""
-        player_army = ['infantry', 'infantry', 'ranged']
-        enemy_army = ['infantry', 'cavalry']
+        player_army = HERO_ARMY
+        enemy_army = TEST_ENEMY_ARMY
         terrain = 'plains'
         self.game.start_combat(player_army, enemy_army, terrain)

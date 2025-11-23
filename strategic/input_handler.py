@@ -3,7 +3,7 @@ Input handler for converting mouse coordinates to hex grid positions.
 Uses offset coordinate system for hexagons (strategic map).
 """
 import math
-from constants import MAP_OFFSET_X, MAP_OFFSET_Y, STRATEGIC_HEX_SIZE, MAP_COLS, MAP_ROWS
+from config.constants import MAP_OFFSET_X, MAP_OFFSET_Y, STRATEGIC_HEX_SIZE, MAP_COLS, MAP_ROWS
 
 # Calculate hex dimensions from STRATEGIC_HEX_SIZE
 HEX_WIDTH = STRATEGIC_HEX_SIZE * 2

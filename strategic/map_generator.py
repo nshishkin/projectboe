@@ -5,8 +5,8 @@ Generates a grid of provinces with random terrain types.
 import random
 
 from strategic.province import Province
-from data_definitions import TERRAIN_TYPES
-from constants import MAP_ROWS, MAP_COLS
+from config.data_definitions import TERRAIN_TYPES
+from config.constants import MAP_ROWS, MAP_COLS
 
 def generate_map(rows: int = MAP_ROWS, cols: int = MAP_COLS) -> list[list[Province]]:
     """

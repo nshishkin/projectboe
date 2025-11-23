@@ -7,10 +7,12 @@ import math
 
 from tactical.battlefield import Battlefield
 from tactical.combat_unit import CombatUnit
-from constants import (
+from config.constants import (
     TACTICAL_HEX_SIZE, BATTLEFIELD_ROWS, BATTLEFIELD_COLS,
     BATTLEFIELD_OFFSET_X, BATTLEFIELD_OFFSET_Y,
-    BG_COLOR, WHITE, BLACK, GRAY
+    BG_COLOR, WHITE, BLACK, GRAY, SCREEN_HEIGHT,
+    BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
+    BUTTON_HEIGHT, BUTTON_BORDER_WIDTH
 )
 
 
@@ -22,17 +24,19 @@ class TacticalState:
     attack execution, and victory/defeat detection.
     """
 
-    def __init__(self, screen, player_army: list[str], enemy_army: list[str], terrain: str):
+    def __init__(self, screen, game, player_army: list[str], enemy_army: list[str], terrain: str):
         """
         Initialize tactical combat.
 
         Args:
             screen: Pygame display surface
+            game: Reference to Game instance (for returning to strategic)
             player_army: List of unit types for player (e.g., ['infantry', 'cavalry'])
             enemy_army: List of unit types for enemy
             terrain: Terrain type from strategic province
         """
         self.screen = screen
+        self.game = game
         self.battlefield = Battlefield(terrain)
         self.battlefield.place_units(player_army, enemy_army)
 
@@ -44,6 +48,14 @@ class TacticalState:
         self.selected_unit: CombatUnit | None = None
         self.combat_ended = False
         self.winner = None  # 'player' or 'enemy'
+        self.show_victory_window = False
+
+        # Debug button (bottom-left)
+        button_y = SCREEN_HEIGHT - BUTTON_HEIGHT - 10
+        self.debug_finish_button = pygame.Rect(50, button_y, 200, BUTTON_HEIGHT)
+
+        # Victory window OK button (centered)
+        self.ok_button = pygame.Rect(0, 0, 150, BUTTON_HEIGHT)  # Position calculated in render
 
         print(f"Tactical combat initialized: {len(player_army)} vs {len(enemy_army)}")
 
@@ -83,6 +95,18 @@ class TacticalState:
         Args:
             mouse_pos: (x, y) pixel coordinates of mouse click
         """
+        # Check victory window OK button
+        if self.show_victory_window:
+            if self.ok_button.collidepoint(mouse_pos):
+                self._handle_victory_ok()
+            return
+
+        # Check debug finish button
+        if not self.combat_ended:
+            if self.debug_finish_button.collidepoint(mouse_pos):
+                self._handle_debug_finish()
+                return
+
         if self.combat_ended:
             return
 
@@ -143,8 +167,12 @@ class TacticalState:
         if self.selected_unit:
             self._highlight_unit(self.selected_unit)
 
-        # Draw UI (victory/defeat screen)
-        if self.combat_ended:
+        # Draw debug button (if combat not ended)
+        if not self.combat_ended:
+            self._draw_debug_button()
+
+        # Draw victory window
+        if self.show_victory_window:
             self._draw_victory_screen()
 
     def _draw_battlefield(self):
@@ -212,28 +240,28 @@ class TacticalState:
         pygame.draw.polygon(self.screen, WHITE, corners, 3)
 
     def _draw_victory_screen(self):
-        """Draw victory/defeat overlay."""
+        """Draw victory window with OK button."""
         # Semi-transparent overlay
         overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
-        overlay.set_alpha(128)
+        overlay.set_alpha(180)
         overlay.fill(BLACK)
         self.screen.blit(overlay, (0, 0))
 
-        # Victory/Defeat text
-        font = pygame.font.Font(None, 74)
-        if self.winner == 'player':
-            text = font.render("VICTORY!", True, (0, 255, 0))
-        else:
-            text = font.render("DEFEAT!", True, (255, 0, 0))
-
-        text_rect = text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2))
+        # Victory message
+        font = pygame.font.Font(None, 64)
+        text = font.render("You won the battle", True, WHITE)
+        text_rect = text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 - 50))
         self.screen.blit(text, text_rect)
 
-        # Instructions
-        small_font = pygame.font.Font(None, 36)
-        instruction = small_font.render("Press ESC to return to strategic map", True, WHITE)
-        inst_rect = instruction.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 + 60))
-        self.screen.blit(instruction, inst_rect)
+        # OK button (centered below message)
+        button_x = self.screen.get_width()//2 - 75
+        button_y = self.screen.get_height()//2 + 30
+        self.ok_button.x = button_x
+        self.ok_button.y = button_y
+
+        # Draw OK button with hover
+        mouse_pos = pygame.mouse.get_pos()
+        self._draw_button(self.ok_button, "Ok", mouse_pos)
 
     def _get_hex_corners(self, center_x: float, center_y: float) -> list[tuple[float, float]]:
         """
@@ -323,3 +351,47 @@ class TacticalState:
                     best = (c, r)
 
         return best
+
+    def _draw_button(self, rect: pygame.Rect, text: str, mouse_pos: tuple[int, int]):
+        """Draw button with hover effect."""
+        # Hover detection
+        if rect.collidepoint(mouse_pos):
+            color = BUTTON_HOVER_COLOR
+        else:
+            color = BUTTON_COLOR
+
+        # Draw button background and border
+        pygame.draw.rect(self.screen, color, rect)
+        pygame.draw.rect(self.screen, BUTTON_TEXT_COLOR, rect, BUTTON_BORDER_WIDTH)
+
+        # Draw text centered
+        font = pygame.font.Font(None, 28)
+        text_surf = font.render(text, True, BUTTON_TEXT_COLOR)
+        text_rect = text_surf.get_rect(center=rect.center)
+        self.screen.blit(text_surf, text_rect)
+
+    def _draw_debug_button(self):
+        """Draw debug finish battle button."""
+        mouse_pos = pygame.mouse.get_pos()
+        self._draw_button(self.debug_finish_button, "Finish battle (debug)", mouse_pos)
+
+    def _handle_debug_finish(self):
+        """Handle debug finish button - kill all enemies and show victory."""
+        print("DEBUG: Finishing battle instantly")
+
+        # Kill all enemy units
+        for enemy in self.battlefield.enemy_units:
+            enemy.current_hp = 0
+
+        # Remove dead units
+        self.battlefield.remove_dead_units()
+
+        # Set victory state
+        self.combat_ended = True
+        self.winner = 'player'
+        self.show_victory_window = True
+
+    def _handle_victory_ok(self):
+        """Handle OK button in victory window - return to strategic map."""
+        print("Returning to strategic map")
+        self.game.change_state('strategic')

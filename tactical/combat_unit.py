@@ -3,7 +3,7 @@ Combat unit class for tactical battlefield.
 Represents individual units in combat with stats, position, and combat logic.
 """
 import random
-from constants import UNIT_TYPES
+from config.constants import UNIT_TYPES
 
 
 class CombatUnit:

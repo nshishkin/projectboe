@@ -33,13 +33,13 @@ BUTTON_BORDER_WIDTH = 2
 # Strategic map settings (Phase 2, but define now)
 MAP_ROWS = 12
 MAP_COLS = 8
- 
+
 
 # Tactical map settings (Phase 3, but define now)
 BATTLEFIELD_ROWS = 20
 BATTLEFIELD_COLS = 20
 DEPLOYMENT_COLUMNS = 3  # Number of columns for unit deployment on each side
- 
+
 
 # Strategic map offsets
 MAP_OFFSET_X = 50

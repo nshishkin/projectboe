@@ -5,7 +5,7 @@ Initializes Pygame and runs the main game loop.
 import pygame
 
 from game import Game
-from constants import SCREEN_WIDTH, SCREEN_HEIGHT, FPS
+from config.constants import SCREEN_WIDTH, SCREEN_HEIGHT, FPS
 
 def main():
     """Initializes and runs the game."""
