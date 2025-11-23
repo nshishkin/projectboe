@@ -11,7 +11,9 @@ from strategic.input_handler import pixel_to_hex, hex_to_pixel
 from data_definitions import TERRAIN_TYPES
 from constants import (
     STRATEGIC_HEX_SIZE, MAP_ROWS, MAP_COLS,
-    BG_COLOR, WHITE, BLACK
+    BG_COLOR, WHITE, BLACK, SCREEN_HEIGHT,
+    BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
+    BUTTON_HEIGHT, BUTTON_BORDER_WIDTH
 )
 
 class StrategicState:
@@ -27,6 +29,14 @@ class StrategicState:
         self.game = game
         self.map_grid = generate_map(MAP_ROWS, MAP_COLS)
         self.hero = Hero(0, 0)  # Start at top-left for now
+
+        # Turn counter
+        self.current_turn = 1
+
+        # UI Buttons (positioned at bottom of screen)
+        button_y = SCREEN_HEIGHT - BUTTON_HEIGHT - 10
+        self.end_turn_button = pygame.Rect(50, button_y, 150, BUTTON_HEIGHT)
+        self.start_combat_button = pygame.Rect(220, button_y, 180, BUTTON_HEIGHT)
 
         print(f"Strategic state initialized with {MAP_ROWS}x{MAP_COLS} map")
         # Debug: print all province centers
@@ -91,38 +101,41 @@ class StrategicState:
         pygame.draw.circle(self.screen, BLACK, (int(center_x), int(center_y)), 15, 2)
 
     def render(self):
-        """Render the strategic map and hero."""
+        """Render the strategic map, hero, and UI."""
         # Draw all provinces
         for row in self.map_grid:
             for province in row:
                 self._draw_province(province)
-        
+
         # Draw hero on top
         self._draw_hero()
 
+        # Draw UI (buttons and turn counter)
+        self._draw_ui()
+
     def handle_click(self, mouse_pos: tuple[int, int]):
         """
-        Handle mouse click on the strategic map.
-        
+        Handle mouse click on the strategic map or UI buttons.
+
         Args:
             mouse_pos: Tuple of (x, y) mouse position in pixels
         """
+        # Check button clicks first
+        if self._handle_button_click(mouse_pos):
+            return  # Button was clicked, don't process map click
+
         # Convert pixel position to hex grid coordinates
-        grid_coords = pixel_to_hex(mouse_pos[0], mouse_pos[1])   
+        grid_coords = pixel_to_hex(mouse_pos[0], mouse_pos[1])
         if grid_coords:
             grid_x, grid_y = grid_coords
-            
+
             # Check if click is within map bounds
             province = get_province_at(self.map_grid, grid_x, grid_y)
-            
+
             if province:
                 # Move hero to clicked province
                 self.hero.move_to(grid_x, grid_y)
-                print(f"Clicked province: {province.terrain_type} at ({grid_x}, {grid_y})")
-
-                # Phase 3: Test combat trigger (every click starts combat)
-                # Phase 4+: Check province.encounter instead
-                self._trigger_test_combat(province)
+                print(f"Moved to {province.terrain_type} at ({grid_x}, {grid_y})")
 
     def _trigger_test_combat(self, province):
         """
@@ -139,3 +152,57 @@ class StrategicState:
 
         # Start combat
         self.game.start_combat(player_army, enemy_army, province.terrain_type)
+
+    def _draw_ui(self):
+        """Draw UI elements (buttons and turn counter)."""
+        # Get mouse position for hover detection
+        mouse_pos = pygame.mouse.get_pos()
+
+        # Draw turn counter at top
+        font = pygame.font.Font(None, 36)
+        turn_text = font.render(f"Turn: {self.current_turn}", True, WHITE)
+        self.screen.blit(turn_text, (50, 10))
+
+        # Draw buttons with hover effect
+        self._draw_button(self.end_turn_button, "End Turn", mouse_pos)
+        self._draw_button(self.start_combat_button, "Start Combat", mouse_pos)
+
+    def _draw_button(self, rect: pygame.Rect, text: str, mouse_pos: tuple[int, int]):
+        """Draw button with hover effect."""
+        # Hover detection
+        if rect.collidepoint(mouse_pos):
+            color = BUTTON_HOVER_COLOR
+        else:
+            color = BUTTON_COLOR
+
+        # Draw button background and border
+        pygame.draw.rect(self.screen, color, rect)
+        pygame.draw.rect(self.screen, BUTTON_TEXT_COLOR, rect, BUTTON_BORDER_WIDTH)
+
+        # Draw text centered
+        font = pygame.font.Font(None, 28)
+        text_surf = font.render(text, True, BUTTON_TEXT_COLOR)
+        text_rect = text_surf.get_rect(center=rect.center)
+        self.screen.blit(text_surf, text_rect)
+
+    def _handle_button_click(self, mouse_pos: tuple[int, int]) -> bool:
+        """Handle button clicks. Returns True if a button was clicked."""
+        if self.end_turn_button.collidepoint(mouse_pos):
+            self._end_turn()
+            return True
+        elif self.start_combat_button.collidepoint(mouse_pos):
+            self._start_test_combat()
+            return True
+        return False
+
+    def _end_turn(self):
+        """End current turn and advance to next."""
+        self.current_turn += 1
+        print(f"=== Turn {self.current_turn} started ===")
+
+    def _start_test_combat(self):
+        """Start test combat (manual trigger)."""
+        player_army = ['infantry', 'infantry', 'ranged']
+        enemy_army = ['infantry', 'cavalry']
+        terrain = 'plains'
+        self.game.start_combat(player_army, enemy_army, terrain)
