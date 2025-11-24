@@ -43,18 +43,26 @@ Implementation Phases
   Files: combat_unit.py, battlefield.py, tactical_state.py
 
   ---
-  Phase 4: AI and Combat Flow (Week 4)
+  Phase 4: AI and Combat Flow (Week 4) ✅ COMPLETED
 
   Goal: AI opponents and complete combat cycle
 
-  1. Implement combat_ai.py - Basic enemy AI
-  2. Add initiative system to tactical_state.py
-  3. Implement victory/defeat detection
-  4. Add transition back to strategic layer after combat
-  5. Update strategic_state.py to trigger combat on encounters
-  6. Test: Complete flow from strategic → combat → strategic
+  1. ✅ Implement combat_ai.py - Basic enemy AI with priority-based targeting
+  2. ✅ Add initiative system to tactical_state.py (was already implemented)
+  3. ✅ Implement victory/defeat detection with auto-display window
+  4. ✅ Add transition back to strategic layer after combat
+  5. ✅ Implement new UI system (ALT+hover, ranged attacks, visual feedback)
+  6. ✅ Add ranged attack support (4 hex range for ranged units)
 
-  Files: combat_ai.py, updates to tactical_state.py and strategic_state.py
+  Files: combat_ai.py, tactical_state.py, combat_unit.py, constants.py
+
+  Additional features implemented:
+  - Priority-based AI (targets wounded, prioritizes ranged units, path-finding)
+  - Auto-selection of active player unit
+  - Visual indicators (green for movement, red for attackable enemies)
+  - ALT+hover/click for viewing enemy stats
+  - Automatic melee/ranged attack selection based on distance
+  - Victory/defeat window with auto-display
 
   ---
   Phase 5: Polish and Save System (Week 5)
@@ -63,14 +71,15 @@ Implementation Phases
 
   1. Implement save_system.py - JSON save/load
   2. Add save/load to strategic_state.py
-  3. Implement utils.py - Pathfinding helpers
-  4. Improve map generation (constraints, connectivity)
-  5. Add UI for retreat and auto-resolve options
-  6. Add unit data to hero.py (army composition)
-  7. Polish rendering (better colors, unit info display)
-  8. Test: Can play multiple sessions with save/load
+  3. Implement encounter system - Generate encounters on map, trigger combat on movement
+  4. Implement utils.py - Pathfinding helpers (if needed)
+  5. Improve map generation (constraints, connectivity)
+  6. Add UI for retreat and auto-resolve options
+  7. Update hero.py army composition persistence
+  8. Polish rendering (better colors, unit info display)
+  9. Test: Can play multiple sessions with save/load
 
-  Files: save_system.py, utils.py, polish across existing files
+  Files: save_system.py, utils.py, map_generator.py, province.py, strategic_state.py, polish across existing files
 
   ---
   Phase 6: Content and Balance (Week 6)

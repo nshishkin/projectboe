@@ -286,10 +286,12 @@ class TacticalState:
         if not self.battlefield.enemy_units:
             self.combat_ended = True
             self.winner = 'player'
+            self.show_victory_window = True
             print("VICTORY! All enemies defeated!")
         elif not self.battlefield.player_units:
             self.combat_ended = True
             self.winner = 'enemy'
+            self.show_victory_window = True  # Show defeat window too
             print("DEFEAT! All units lost!")
 
     def handle_click(self, mouse_pos: tuple[int, int]):
@@ -621,16 +623,23 @@ class TacticalState:
             pygame.draw.polygon(self.screen, red_color, corners, 3)
 
     def _draw_victory_screen(self):
-        """Draw victory window with OK button."""
+        """Draw victory/defeat window with OK button."""
         # Semi-transparent overlay
         overlay = pygame.Surface((self.screen.get_width(), self.screen.get_height()))
         overlay.set_alpha(180)
         overlay.fill(BLACK)
         self.screen.blit(overlay, (0, 0))
 
-        # Victory message
+        # Victory or Defeat message
         font = pygame.font.Font(None, 64)
-        text = font.render("You won the battle", True, WHITE)
+        if self.winner == 'player':
+            message = "You won the battle!"
+            message_color = (100, 255, 100)  # Green
+        else:
+            message = "You were defeated!"
+            message_color = (255, 100, 100)  # Red
+
+        text = font.render(message, True, message_color)
         text_rect = text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2 - 50))
         self.screen.blit(text, text_rect)
 
