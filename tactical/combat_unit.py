@@ -42,14 +42,14 @@ class CombatUnit:
         self.initiative = stats['initiative']
         self.morale = stats['morale']
         self.base_damage = stats['base_damage']
-        self.movement_points = stats['movement_points']
+        self.action_points = stats['action_points']
 
         # Visual color based on ownership
         self.color = stats['color'] if is_player else stats['enemy_color']
 
         # Combat state
         self.has_acted = False  # Has unit acted this turn
-        self.current_movement = self.movement_points  # Movement points available this turn
+        self.current_action_points = self.action_points  # Action points available this turn
 
     def take_damage(self, damage: int) -> bool:
         """
@@ -116,6 +116,7 @@ class CombatUnit:
     def reset_turn(self):
         """Reset turn-based state at the start of a new round."""
         self.has_acted = False
+        self.current_action_points = self.action_points
 
     def is_adjacent(self, target: 'CombatUnit') -> bool:
         """

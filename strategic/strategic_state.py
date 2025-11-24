@@ -8,14 +8,15 @@ import math
 from strategic.map_generator import generate_map, get_province_at
 from strategic.hero import Hero
 from strategic.input_handler import pixel_to_hex, hex_to_pixel
+from strategic.movement import get_reachable_cells
 from config.data_definitions import TERRAIN_TYPES
 from config.player_data import HERO_ARMY
 from config.enemy import TEST_ENEMY_ARMY
 from config.constants import (
     STRATEGIC_HEX_SIZE, MAP_ROWS, MAP_COLS,
-    BG_COLOR, WHITE, BLACK, SCREEN_HEIGHT,
+    BG_COLOR, WHITE, BLACK, DARK_GRAY, SCREEN_HEIGHT,
     BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
-    BUTTON_HEIGHT, BUTTON_BORDER_WIDTH
+    BUTTON_HEIGHT, BUTTON_BORDER_WIDTH, UNIT_TYPES
 )
 
 class StrategicState:
@@ -31,9 +32,14 @@ class StrategicState:
         self.game = game
         self.map_grid = generate_map(MAP_ROWS, MAP_COLS)
         self.hero = Hero(0, 0)  # Start at top-left for now
+        self.hero.army = HERO_ARMY  # Load hero's army from player data
 
         # Turn counter
         self.current_turn = 1
+
+        # Movement tracking
+        self.reachable_cells: dict[tuple[int, int], int] = {}  # Valid movement targets and distances
+        self._calculate_reachable_cells()  # Calculate initial reachable cells
 
         # Debug mode for showing hex coordinates
         self.show_hex_coords = False
@@ -101,10 +107,92 @@ class StrategicState:
         """Draw hero marker on current province."""
         # Get hero position in pixels
         center_x, center_y = hex_to_pixel(self.hero.x, self.hero.y)
-        
+
         # Draw hero as white circle with black border
         pygame.draw.circle(self.screen, WHITE, (int(center_x), int(center_y)), 15)
         pygame.draw.circle(self.screen, BLACK, (int(center_x), int(center_y)), 15, 2)
+
+    def _draw_reachable_cells(self):
+        """Draw green highlights on cells hero can move to."""
+        for (x, y), distance in self.reachable_cells.items():
+            center_x, center_y = hex_to_pixel(x, y)
+            corners = self._get_hex_corners(center_x, center_y)
+
+            # Draw semi-transparent green overlay
+            alpha = 100 if distance == 1 else 60
+            green_color = (0, 255, 0)
+
+            # Create surface for transparency
+            overlay = pygame.Surface((STRATEGIC_HEX_SIZE * 3, STRATEGIC_HEX_SIZE * 3), pygame.SRCALPHA)
+            overlay_corners = [(cx - center_x + STRATEGIC_HEX_SIZE * 1.5,
+                               cy - center_y + STRATEGIC_HEX_SIZE * 1.5)
+                              for cx, cy in corners]
+            pygame.draw.polygon(overlay, (*green_color, alpha), overlay_corners)
+
+            # Blit to screen
+            self.screen.blit(overlay, (int(center_x - STRATEGIC_HEX_SIZE * 1.5),
+                                      int(center_y - STRATEGIC_HEX_SIZE * 1.5)))
+
+    def _draw_hero_info_panel(self):
+        """Draw hero information panel below the map, aligned with buttons."""
+        # Panel dimensions
+        panel_width = 220
+        panel_height = 200
+
+        # Position: right of the buttons, at bottom of screen
+        panel_x = 640
+        panel_y = SCREEN_HEIGHT - panel_height - 10
+
+        # Draw panel background
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+        pygame.draw.rect(self.screen, DARK_GRAY, panel_rect)
+        pygame.draw.rect(self.screen, WHITE, panel_rect, 2)  # Border
+
+        # Font for text (smaller for compact panel)
+        title_font = pygame.font.Font(None, 28)
+        text_font = pygame.font.Font(None, 20)
+
+        y_offset = panel_y + 8
+
+        # Hero title
+        title_text = title_font.render("Hero", True, WHITE)
+        self.screen.blit(title_text, (panel_x + 8, y_offset))
+        y_offset += 30
+
+        # Movement points
+        movement_text = text_font.render(
+            f"Movement: {self.hero.current_movement}/{self.hero.movement_points}",
+            True, WHITE
+        )
+        self.screen.blit(movement_text, (panel_x + 8, y_offset))
+        y_offset += 28
+
+        # Army section
+        army_title = text_font.render("Army:", True, WHITE)
+        self.screen.blit(army_title, (panel_x + 8, y_offset))
+        y_offset += 25
+
+        # Count units by type
+        unit_counts = {}
+        for unit_type in self.hero.army:
+            unit_counts[unit_type] = unit_counts.get(unit_type, 0) + 1
+
+        # Draw unit list (compact)
+        for unit_type, count in unit_counts.items():
+            if unit_type in UNIT_TYPES:
+                unit_name = UNIT_TYPES[unit_type]['name']
+                unit_color = UNIT_TYPES[unit_type]['color']
+
+                # Draw colored circle for unit type (smaller)
+                circle_x = panel_x + 15
+                circle_y = y_offset + 8
+                pygame.draw.circle(self.screen, unit_color, (circle_x, circle_y), 6)
+                pygame.draw.circle(self.screen, WHITE, (circle_x, circle_y), 6, 1)
+
+                # Draw unit name and count
+                unit_text = text_font.render(f"{unit_name} x{count}", True, WHITE)
+                self.screen.blit(unit_text, (panel_x + 30, y_offset))
+                y_offset += 25
 
     def render(self):
         """Render the strategic map, hero, and UI."""
@@ -112,6 +200,10 @@ class StrategicState:
         for row in self.map_grid:
             for province in row:
                 self._draw_province(province)
+
+        # Draw reachable cells (before hero so they're underneath)
+        if self.reachable_cells:
+            self._draw_reachable_cells()
 
         # Draw hero on top
         self._draw_hero()
@@ -122,6 +214,9 @@ class StrategicState:
 
         # Draw UI (buttons and turn counter)
         self._draw_ui()
+
+        # Draw hero info panel
+        self._draw_hero_info_panel()
 
     def handle_click(self, mouse_pos: tuple[int, int]):
         """
@@ -139,13 +234,34 @@ class StrategicState:
         if grid_coords:
             grid_x, grid_y = grid_coords
 
-            # Check if click is within map bounds
-            province = get_province_at(self.map_grid, grid_x, grid_y)
+            # Check if click is within reachable cells
+            if (grid_x, grid_y) in self.reachable_cells:
+                distance = self.reachable_cells[(grid_x, grid_y)]
+                province = get_province_at(self.map_grid, grid_x, grid_y)
 
-            if province:
-                # Move hero to clicked province
+                # Move hero and consume movement points
                 self.hero.move_to(grid_x, grid_y)
-                print(f"Moved to {province.terrain_type} at ({grid_x}, {grid_y})")
+                self.hero.current_movement -= distance
+                print(f"Moved to {province.terrain_type} at ({grid_x}, {grid_y}), {self.hero.current_movement} movement left")
+
+                # Recalculate reachable cells
+                self._calculate_reachable_cells()
+            else:
+                print(f"Cannot move to ({grid_x}, {grid_y}) - out of range")
+
+    def _calculate_reachable_cells(self):
+        """Calculate cells reachable by hero based on current movement points."""
+        if self.hero.current_movement > 0:
+            self.reachable_cells = get_reachable_cells(
+                self.hero.x,
+                self.hero.y,
+                self.hero.current_movement,
+                self.map_grid
+            )
+            print(f"Hero can reach {len(self.reachable_cells)} cells")
+        else:
+            self.reachable_cells.clear()
+            print("Hero has no movement points left")
 
     def _trigger_test_combat(self, province):
         """
@@ -215,6 +331,13 @@ class StrategicState:
     def _end_turn(self):
         """End current turn and advance to next."""
         self.current_turn += 1
+
+        # Restore hero movement points
+        self.hero.restore_movement()
+
+        # Recalculate reachable cells
+        self._calculate_reachable_cells()
+
         print(f"=== Turn {self.current_turn} started ===")
 
     def _start_test_combat(self):

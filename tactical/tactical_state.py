@@ -4,6 +4,7 @@ Manages combat flow, unit selection, turn order, and victory conditions.
 """
 import pygame
 import math
+import random
 
 from tactical.battlefield import Battlefield
 from tactical.combat_unit import CombatUnit
@@ -13,7 +14,8 @@ from config.constants import (
     BATTLEFIELD_OFFSET_X, BATTLEFIELD_OFFSET_Y,
     BG_COLOR, WHITE, BLACK, GRAY, DARK_GRAY, SCREEN_HEIGHT,
     BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
-    BUTTON_HEIGHT, BUTTON_BORDER_WIDTH
+    BUTTON_HEIGHT, BUTTON_BORDER_WIDTH,
+    TACTICAL_MOVE_COST, TACTICAL_ATTACK_COST
 )
 
 
@@ -44,6 +46,8 @@ class TacticalState:
         # Calculate turn order by initiative (highest first)
         self.turn_order = self._calculate_turn_order()
         self.current_unit_index = 0
+        self.current_round = 1  # Track combat rounds
+        self.animation_time = 0.0  # For bouncing animation
 
         # UI state
         self.selected_unit: CombatUnit | None = None
@@ -54,30 +58,109 @@ class TacticalState:
         self.show_victory_window = False
         self.show_hex_coords = False  # Debug mode for showing hex coordinates
 
-        # Debug buttons (bottom)
+        # Combat buttons (bottom)
         button_y = SCREEN_HEIGHT - BUTTON_HEIGHT - 10
-        self.debug_finish_button = pygame.Rect(50, button_y, 200, BUTTON_HEIGHT)
-        self.show_coords_button = pygame.Rect(270, button_y, 200, BUTTON_HEIGHT)
+        self.end_turn_button = pygame.Rect(50, button_y, 150, BUTTON_HEIGHT)
+        self.debug_finish_button = pygame.Rect(220, button_y, 200, BUTTON_HEIGHT)
+        self.show_coords_button = pygame.Rect(440, button_y, 200, BUTTON_HEIGHT)
 
         # Victory window OK button (centered)
         self.ok_button = pygame.Rect(0, 0, 150, BUTTON_HEIGHT)  # Position calculated in render
 
         print(f"Tactical combat initialized: {len(player_army)} vs {len(enemy_army)}")
+        print(f"=== ROUND {self.current_round} STARTED ===")
+
+        # Announce first unit's turn (auto-skip if enemy)
+        first_unit = self.get_current_unit()
+        if first_unit:
+            if not first_unit.is_player:
+                print(f"{first_unit.name} (Enemy) auto-skips turn")
+                self._end_unit_turn()
+            else:
+                print(f"=== {first_unit.name}'s turn (Initiative: {first_unit.initiative}) ===")
 
     def _calculate_turn_order(self) -> list[CombatUnit]:
         """
         Calculate turn order based on initiative stat.
+        Units with equal initiative are randomized.
 
         Returns:
             List of all units sorted by initiative (highest first)
         """
         all_units = self.battlefield.get_all_units()
-        return sorted(all_units, key=lambda u: u.initiative, reverse=True)
+        # Add random tie-breaker for units with same initiative
+        return sorted(all_units, key=lambda u: (u.initiative, random.random()), reverse=True)
+
+    def get_current_unit(self) -> CombatUnit | None:
+        """Get the unit whose turn it currently is."""
+        if 0 <= self.current_unit_index < len(self.turn_order):
+            return self.turn_order[self.current_unit_index]
+        return None
+
+    def _end_unit_turn(self):
+        """End the current unit's turn and move to next unit."""
+        current_unit = self.get_current_unit()
+        if current_unit:
+            current_unit.has_acted = True
+            print(f"{current_unit.name}'s turn ended")
+
+        self._next_unit_turn()
+
+    def _next_unit_turn(self):
+        """Advance to next unit's turn."""
+        self.current_unit_index += 1
+
+        # Check if round is complete
+        if self.current_unit_index >= len(self.turn_order):
+            self._start_new_round()
+            return
+
+        # Auto-skip enemy units (no AI yet)
+        current_unit = self.get_current_unit()
+        if current_unit and not current_unit.is_player:
+            print(f"{current_unit.name} (Enemy) auto-skips turn")
+            self._end_unit_turn()
+        else:
+            # Start player unit's turn
+            if current_unit:
+                print(f"=== {current_unit.name}'s turn (Initiative: {current_unit.initiative}) ===")
+
+    def _start_new_round(self):
+        """Start a new combat round."""
+        self.current_round += 1
+        self.current_unit_index = 0
+
+        print(f"\n=== ROUND {self.current_round} STARTED ===")
+
+        # Restore movement points for all units
+        for unit in self.turn_order:
+            unit.reset_turn()
+
+        # Recalculate turn order (re-randomize ties)
+        self.turn_order = self._calculate_turn_order()
+
+        # Auto-skip if first unit is enemy
+        current_unit = self.get_current_unit()
+        if current_unit and not current_unit.is_player:
+            print(f"{current_unit.name} (Enemy) auto-skips turn")
+            self._end_unit_turn()
+        else:
+            if current_unit:
+                print(f"=== {current_unit.name}'s turn (Initiative: {current_unit.initiative}) ===")
 
     def update(self):
         """Update combat logic each frame."""
         if self.combat_ended:
             return
+
+        # Update animation timer (for bouncing effect)
+        self.animation_time += 0.016  # Assuming ~60 FPS
+
+        # Check if current unit's turn should end (no action points left)
+        current_unit = self.get_current_unit()
+        if current_unit and current_unit.current_action_points <= 0 and not current_unit.has_acted:
+            print(f"{current_unit.name} has no action points left - turn ending")
+            self._end_unit_turn()
 
         # Check victory/defeat conditions
         if not self.battlefield.enemy_units:
@@ -106,9 +189,12 @@ class TacticalState:
                 self._handle_victory_ok()
             return
 
-        # Check debug buttons
+        # Check buttons
         if not self.combat_ended:
-            if self.debug_finish_button.collidepoint(mouse_pos):
+            if self.end_turn_button.collidepoint(mouse_pos):
+                self._handle_end_turn()
+                return
+            elif self.debug_finish_button.collidepoint(mouse_pos):
                 self._handle_debug_finish()
                 return
             elif self.show_coords_button.collidepoint(mouse_pos):
@@ -131,18 +217,22 @@ class TacticalState:
             self.info_unit = clicked_unit
             print(f"Showing info for {clicked_unit.name}")
 
-        # Phase 4: Movement and combat logic
+        # Turn-based movement and combat logic
+        current_unit = self.get_current_unit()
+
         if self.selected_unit is None:
-            # First click: select player unit
-            if clicked_unit and clicked_unit.is_player:
+            # First click: can only select current unit
+            if clicked_unit == current_unit and clicked_unit.is_player:
                 self.selected_unit = clicked_unit
                 print(f"Selected {clicked_unit.name} at ({x}, {y})")
 
-                # Calculate reachable cells for movement (only if unit has movement left)
-                if clicked_unit.current_movement > 0:
+                # Calculate reachable cells for movement (only if unit has action points left)
+                if clicked_unit.current_action_points >= TACTICAL_MOVE_COST:
                     self._calculate_reachable_cells()
                 else:
-                    print(f"{clicked_unit.name} has no movement points left")
+                    print(f"{clicked_unit.name} has no action points left for movement")
+            elif clicked_unit and clicked_unit.is_player and clicked_unit != current_unit:
+                print(f"It's not {clicked_unit.name}'s turn yet!")
         else:
             # Have a selected unit - check what was clicked
             if clicked_unit and not clicked_unit.is_player:
@@ -155,12 +245,12 @@ class TacticalState:
                 distance = self.reachable_cells[(x, y)]
                 self._move_unit(self.selected_unit, x, y, distance)
 
-                # Check if unit has movement left
-                if self.selected_unit.current_movement > 0:
+                # Check if unit has action points left for another move
+                if self.selected_unit.current_action_points >= TACTICAL_MOVE_COST:
                     # Recalculate reachable cells
                     self._calculate_reachable_cells()
                 else:
-                    # No movement left, deselect
+                    # No action points left for movement, deselect
                     self.selected_unit = None
                     self.reachable_cells.clear()
             else:
@@ -172,13 +262,23 @@ class TacticalState:
     def _execute_attack(self, attacker: CombatUnit, target: CombatUnit):
         """
         Execute attack from attacker to target.
+        Costs TACTICAL_ATTACK_COST action points.
 
         Args:
             attacker: Unit performing attack
             target: Unit being attacked
         """
+        # Check if attacker has action points for attack
+        if attacker.current_action_points < TACTICAL_ATTACK_COST:
+            print(f"{attacker.name} has no action points to attack!")
+            return
+
         # Perform attack (uses hit chance formula from CombatUnit)
         damage = attacker.attack(target)
+
+        # Consume action points for attack
+        attacker.current_action_points -= TACTICAL_ATTACK_COST
+        print(f"{attacker.name} has {attacker.current_action_points} action points left")
 
         # Remove dead units
         self.battlefield.remove_dead_units()
@@ -188,7 +288,7 @@ class TacticalState:
             self.turn_order = [u for u in self.turn_order if u.is_alive()]
 
     def _calculate_reachable_cells(self):
-        """Calculate cells reachable by selected unit based on movement points."""
+        """Calculate cells reachable by selected unit based on action points."""
         if not self.selected_unit:
             return
 
@@ -198,30 +298,36 @@ class TacticalState:
             if unit != self.selected_unit:  # Don't block own position
                 blocked.add((unit.x, unit.y))
 
+        # Calculate how many hexes can be reached with current action points
+        # Each hex costs TACTICAL_MOVE_COST action points
+        max_hexes = self.selected_unit.current_action_points // TACTICAL_MOVE_COST
+
         # Calculate reachable cells using BFS pathfinding
         self.reachable_cells = get_reachable_cells(
             self.selected_unit.x,
             self.selected_unit.y,
-            self.selected_unit.current_movement,
+            max_hexes,
             blocked
         )
 
-        print(f"Found {len(self.reachable_cells)} reachable cells")
+        print(f"Found {len(self.reachable_cells)} reachable cells (AP: {self.selected_unit.current_action_points})")
 
     def _move_unit(self, unit: CombatUnit, target_x: int, target_y: int, distance: int):
         """
-        Move unit to target position and consume movement points.
+        Move unit to target position and consume action points.
 
         Args:
             unit: Unit to move
             target_x: Target grid column
             target_y: Target grid row
-            distance: Distance to target (movement cost)
+            distance: Distance in hexes (will be multiplied by TACTICAL_MOVE_COST)
         """
-        print(f"Moving {unit.name} from ({unit.x}, {unit.y}) to ({target_x}, {target_y}) (cost: {distance})")
+        # Calculate action points cost (distance * cost per hex)
+        ap_cost = distance * TACTICAL_MOVE_COST
+        print(f"Moving {unit.name} from ({unit.x}, {unit.y}) to ({target_x}, {target_y}) (cost: {ap_cost} AP for {distance} hex)")
         unit.move_to(target_x, target_y)
-        unit.current_movement -= distance
-        print(f"{unit.name} has {unit.current_movement} movement points left")
+        unit.current_action_points -= ap_cost
+        print(f"{unit.name} has {unit.current_action_points} action points left")
 
     def render(self):
         """Render the battlefield and units."""
@@ -244,6 +350,10 @@ class TacticalState:
         # Draw hex coordinates if enabled
         if self.show_hex_coords:
             self._draw_hex_coords()
+
+        # Draw combat info (round and current unit)
+        if not self.combat_ended:
+            self._draw_combat_info()
 
         # Draw unit info panel
         self._draw_unit_info_panel()
@@ -273,8 +383,16 @@ class TacticalState:
 
     def _draw_units(self):
         """Draw all units on battlefield."""
+        current_unit = self.get_current_unit()
+
         for unit in self.battlefield.get_all_units():
             center_x, center_y = self._hex_to_pixel(unit.x, unit.y)
+
+            # Add bouncing animation for current unit
+            if unit == current_unit and not self.combat_ended:
+                # Sin wave animation: ±5 pixels, 2 second cycle
+                bounce_offset = math.sin(self.animation_time * math.pi) * 5
+                center_y += bounce_offset
 
             # Draw unit as circle with color
             radius = int(TACTICAL_HEX_SIZE * 0.6)
@@ -480,14 +598,44 @@ class TacticalState:
         text_rect = text_surf.get_rect(center=rect.center)
         self.screen.blit(text_surf, text_rect)
 
+    def _draw_combat_info(self):
+        """Draw combat information (round number and current unit) at top of screen."""
+        font = pygame.font.Font(None, 32)
+
+        # Round number
+        round_text = font.render(f"Round: {self.current_round}", True, WHITE)
+        self.screen.blit(round_text, (20, 10))
+
+        # Current unit info
+        current_unit = self.get_current_unit()
+        if current_unit:
+            side = "Player" if current_unit.is_player else "Enemy"
+            unit_color = (100, 255, 100) if current_unit.is_player else (255, 100, 100)
+            unit_text = font.render(f"Current Turn: {current_unit.name} ({side})", True, unit_color)
+            self.screen.blit(unit_text, (20, 45))
+
     def _draw_debug_buttons(self):
-        """Draw debug buttons."""
+        """Draw combat buttons."""
         mouse_pos = pygame.mouse.get_pos()
+
+        # End Turn button (only active for player units)
+        current_unit = self.get_current_unit()
+        if current_unit and current_unit.is_player:
+            self._draw_button(self.end_turn_button, "End Turn", mouse_pos)
+
+        # Debug buttons
         self._draw_button(self.debug_finish_button, "Finish battle (debug)", mouse_pos)
 
         # Show coords button text changes based on state
         coords_text = "Hide hex coords" if self.show_hex_coords else "Show hex coords"
         self._draw_button(self.show_coords_button, coords_text, mouse_pos)
+
+    def _handle_end_turn(self):
+        """Handle End Turn button click - manually end current unit's turn."""
+        current_unit = self.get_current_unit()
+        if current_unit and current_unit.is_player:
+            print(f"Player manually ended {current_unit.name}'s turn")
+            self._end_unit_turn()
 
     def _handle_debug_finish(self):
         """Handle debug finish button - kill all enemies and show victory."""
@@ -590,7 +738,7 @@ class TacticalState:
 
         # Stats
         stats = [
-            f"Movement: {self.info_unit.current_movement}/{self.info_unit.movement_points}",
+            f"Action Points: {self.info_unit.current_action_points}/{self.info_unit.action_points}",
             f"Melee Attack: {self.info_unit.melee_attack}",
             f"Melee Defence: {self.info_unit.melee_defence}",
             f"Initiative: {self.info_unit.initiative}",

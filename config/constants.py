@@ -49,6 +49,20 @@ MAP_OFFSET_Y = 50
 BATTLEFIELD_OFFSET_X = 50
 BATTLEFIELD_OFFSET_Y = 50
 
+# Strategic map movement
+HERO_MOVEMENT_POINTS = 2  # Maximum movement per turn for hero
+TERRAIN_MOVEMENT_COSTS = {
+    'plains': 1,
+    'forest': 1,
+    'swamp': 1,
+    'hills': 1
+}
+
+# Tactical combat action costs
+UNIT_ACTION_POINTS = 9  # Action points per unit per round
+TACTICAL_MOVE_COST = 2  # AP cost to move 1 hex
+TACTICAL_ATTACK_COST = 4  # AP cost to perform attack
+
 UNIT_TYPES = {
     'infantry': {
         'name': 'Infantry',
@@ -61,7 +75,7 @@ UNIT_TYPES = {
         'initiative': 100,
         'morale': 40,
         'base_damage': 20,
-        'movement_points': 2,
+        'action_points': 9,
         'color': (100, 100, 255),  # Синий для игрока
         'enemy_color': (255, 100, 100)  # Красный для врагов
     },
@@ -76,7 +90,7 @@ UNIT_TYPES = {
         'initiative': 120,  # Быстрее пехоты
         'morale': 50,
         'base_damage': 20,
-        'movement_points': 2,
+        'action_points': 9,
         'color': (100, 255, 100),  # Зелёный
         'enemy_color': (255, 150, 100)
     },
@@ -91,7 +105,7 @@ UNIT_TYPES = {
         'initiative': 110,
         'morale': 30,
         'base_damage': 20,
-        'movement_points': 2,
+        'action_points': 9,
         'color': (255, 255, 100),  # Жёлтый
         'enemy_color': (255, 100, 255)
     },
@@ -106,7 +120,7 @@ UNIT_TYPES = {
         'initiative': 95,
         'morale': 45,
         'base_damage': 20,
-        'movement_points': 2,
+        'action_points': 9,
         'color': (150, 150, 255),
         'enemy_color': (255, 150, 150)
     },
@@ -121,7 +135,7 @@ UNIT_TYPES = {
         'initiative': 115,
         'morale': 35,
         'base_damage': 20,
-        'movement_points': 2,
+        'action_points': 9,
         'color': (200, 200, 100),
         'enemy_color': (200, 100, 200)
     }

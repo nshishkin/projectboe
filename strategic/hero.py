@@ -1,6 +1,7 @@
 """
 Hero class representing the player's hero on the strategic map.
 """
+from config.constants import HERO_MOVEMENT_POINTS
 
 class Hero:
     """
@@ -13,14 +14,18 @@ class Hero:
     def __init__(self, start_x: int, start_y: int):
         """
         Initialize hero at starting position.
-        
+
         Args:
             start_x: Starting column position
             start_y: Starting row position
         """
         self.x = start_x
         self.y = start_y
-        
+
+        # Movement
+        self.movement_points = HERO_MOVEMENT_POINTS  # Maximum movement per turn
+        self.current_movement = HERO_MOVEMENT_POINTS  # Current movement available
+
         # Phase 4+: Will add army, inventory, experience
         self.army = []
         self.inventory = []  
@@ -40,12 +45,17 @@ class Hero:
     def get_position(self) -> tuple[int, int]:
         """
         Get current hero position.
-        
+
         Returns:
             Tuple of (x, y) coordinates
         """
         return (self.x, self.y)
-    
+
+    def restore_movement(self):
+        """Restore movement points to maximum (called at start of turn)."""
+        self.current_movement = self.movement_points
+        print(f"Hero movement restored to {self.movement_points}")
+
     def __repr__(self) -> str:
         """String representation for debugging."""
-        return f"Hero(x={self.x}, y={self.y})"   
+        return f"Hero(x={self.x}, y={self.y}, movement={self.current_movement}/{self.movement_points})"   
