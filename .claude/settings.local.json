@@ -4,7 +4,8 @@
       "Bash(python -m py_compile:*)",
       "Bash(python -c:*)",
       "Bash(python main.py:*)",
-      "Bash(timeout 5 python:*)"
+      "Bash(timeout 5 python:*)",
+      "Bash(tree:*)"
     ],
     "deny": [],
     "ask": []

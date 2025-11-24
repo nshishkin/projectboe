@@ -8,6 +8,7 @@ import random
 
 from tactical.battlefield import Battlefield
 from tactical.combat_unit import CombatUnit
+from tactical.combat_ai import CombatAI
 from tactical.movement import get_reachable_cells
 from config.constants import (
     TACTICAL_HEX_SIZE, BATTLEFIELD_ROWS, BATTLEFIELD_COLS,
@@ -43,6 +44,9 @@ class TacticalState:
         self.battlefield = Battlefield(terrain)
         self.battlefield.place_units(player_army, enemy_army)
 
+        # Initialize AI controller
+        self.ai = CombatAI()
+
         # Calculate turn order by initiative (highest first)
         self.turn_order = self._calculate_turn_order()
         self.current_unit_index = 0
@@ -70,12 +74,12 @@ class TacticalState:
         print(f"Tactical combat initialized: {len(player_army)} vs {len(enemy_army)}")
         print(f"=== ROUND {self.current_round} STARTED ===")
 
-        # Announce first unit's turn (auto-skip if enemy)
+        # Announce first unit's turn (execute AI if enemy)
         first_unit = self.get_current_unit()
         if first_unit:
             if not first_unit.is_player:
-                print(f"{first_unit.name} (Enemy) auto-skips turn")
-                self._end_unit_turn()
+                print(f"=== {first_unit.name}'s turn (Enemy, Initiative: {first_unit.initiative}) ===")
+                self._execute_ai_turn(first_unit)
             else:
                 print(f"=== {first_unit.name}'s turn (Initiative: {first_unit.initiative}) ===")
 
@@ -106,6 +110,73 @@ class TacticalState:
 
         self._next_unit_turn()
 
+    def _execute_ai_turn(self, unit: CombatUnit):
+        """
+        Execute AI-controlled turn for an enemy unit.
+
+        Uses CombatAI to select and perform actions until AP is exhausted.
+
+        Args:
+            unit: Enemy unit to control
+        """
+        # Keep executing actions until unit has no AP left or decides to skip
+        max_actions = 10  # Safety limit to prevent infinite loops
+        action_count = 0
+
+        while unit.current_action_points > 0 and action_count < max_actions:
+            # Get AI decision
+            action = self.ai.select_action(unit, self.battlefield)
+
+            # Execute the action
+            if action['type'] == 'attack':
+                target = action['target']
+                self._execute_attack(unit, target)
+                action_count += 1
+
+                # Check if target died and update turn order
+                if not target.is_alive():
+                    self.turn_order = [u for u in self.turn_order if u.is_alive()]
+
+            elif action['type'] == 'move':
+                target_x, target_y = action['position']
+                target_unit = action.get('target')  # Optional, for logging
+
+                # Calculate distance for AP cost
+                distance = self._calculate_hex_distance(unit.x, unit.y, target_x, target_y)
+
+                # Move the unit
+                self._move_unit(unit, target_x, target_y, distance)
+                action_count += 1
+
+            else:  # 'skip' or unknown action
+                break
+
+        # End the unit's turn
+        self._end_unit_turn()
+
+    def _calculate_hex_distance(self, x1: int, y1: int, x2: int, y2: int) -> int:
+        """
+        Calculate hex distance between two positions.
+
+        Args:
+            x1, y1: Starting position
+            x2, y2: Ending position
+
+        Returns:
+            Distance in hexes
+        """
+        # Convert offset to cube coordinates
+        q1 = x1
+        r1 = y1 - (x1 - (x1 & 1)) // 2
+
+        q2 = x2
+        r2 = y2 - (x2 - (x2 & 1)) // 2
+
+        # Cube distance
+        distance = (abs(q1 - q2) + abs(r1 - r2) + abs(q1 + r1 - q2 - r2)) // 2
+
+        return distance
+
     def _next_unit_turn(self):
         """Advance to next unit's turn."""
         self.current_unit_index += 1
@@ -115,11 +186,11 @@ class TacticalState:
             self._start_new_round()
             return
 
-        # Auto-skip enemy units (no AI yet)
+        # Execute AI for enemy units
         current_unit = self.get_current_unit()
         if current_unit and not current_unit.is_player:
-            print(f"{current_unit.name} (Enemy) auto-skips turn")
-            self._end_unit_turn()
+            print(f"=== {current_unit.name}'s turn (Enemy, Initiative: {current_unit.initiative}) ===")
+            self._execute_ai_turn(current_unit)
         else:
             # Start player unit's turn
             if current_unit:
@@ -139,11 +210,11 @@ class TacticalState:
         # Recalculate turn order (re-randomize ties)
         self.turn_order = self._calculate_turn_order()
 
-        # Auto-skip if first unit is enemy
+        # Execute AI if first unit is enemy
         current_unit = self.get_current_unit()
         if current_unit and not current_unit.is_player:
-            print(f"{current_unit.name} (Enemy) auto-skips turn")
-            self._end_unit_turn()
+            print(f"=== {current_unit.name}'s turn (Enemy, Initiative: {current_unit.initiative}) ===")
+            self._execute_ai_turn(current_unit)
         else:
             if current_unit:
                 print(f"=== {current_unit.name}'s turn (Initiative: {current_unit.initiative}) ===")
