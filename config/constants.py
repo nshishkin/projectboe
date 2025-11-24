@@ -76,6 +76,7 @@ UNIT_TYPES = {
         'morale': 40,
         'base_damage': 20,
         'action_points': 9,
+        'attack_range': 1,  # Melee range
         'color': (100, 100, 255),  # Синий для игрока
         'enemy_color': (255, 100, 100)  # Красный для врагов
     },
@@ -91,6 +92,7 @@ UNIT_TYPES = {
         'morale': 50,
         'base_damage': 20,
         'action_points': 9,
+        'attack_range': 1,  # Melee range
         'color': (100, 255, 100),  # Зелёный
         'enemy_color': (255, 150, 100)
     },
@@ -106,6 +108,7 @@ UNIT_TYPES = {
         'morale': 30,
         'base_damage': 20,
         'action_points': 9,
+        'attack_range': 4,  # Ranged attack
         'color': (255, 255, 100),  # Жёлтый
         'enemy_color': (255, 100, 255)
     },
@@ -121,6 +124,7 @@ UNIT_TYPES = {
         'morale': 45,
         'base_damage': 20,
         'action_points': 9,
+        'attack_range': 1,  # Melee range
         'color': (150, 150, 255),
         'enemy_color': (255, 150, 150)
     },
@@ -136,6 +140,7 @@ UNIT_TYPES = {
         'morale': 35,
         'base_damage': 20,
         'action_points': 9,
+        'attack_range': 4,  # Ranged attack
         'color': (200, 200, 100),
         'enemy_color': (200, 100, 200)
     }

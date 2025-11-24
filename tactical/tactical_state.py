@@ -54,9 +54,13 @@ class TacticalState:
         self.animation_time = 0.0  # For bouncing animation
 
         # UI state
-        self.selected_unit: CombatUnit | None = None
-        self.info_unit: CombatUnit | None = None  # Unit to display info for
-        self.reachable_cells: dict[tuple[int, int], int] = {}  # Valid movement targets and their distances
+        self.selected_unit: CombatUnit | None = None  # Currently selected player unit (for stats display)
+        self.info_unit: CombatUnit | None = None  # Unit to display info for (overrides selected_unit)
+        self.hovered_unit: CombatUnit | None = None  # Unit under mouse cursor (for ALT+hover)
+        self.reachable_cells: dict[tuple[int, int], int] = {}  # Valid movement targets
+        self.attackable_enemies: list[CombatUnit] = []  # Enemies in range of active unit
+        self.alt_pressed = False  # Track ALT key state
+        self.alt_locked_unit: CombatUnit | None = None  # Unit locked with ALT+click
         self.combat_ended = False
         self.winner = None  # 'player' or 'enemy'
         self.show_victory_window = False
@@ -82,6 +86,8 @@ class TacticalState:
                 self._execute_ai_turn(first_unit)
             else:
                 print(f"=== {first_unit.name}'s turn (Initiative: {first_unit.initiative}) ===")
+                # Auto-select first player unit
+                self._auto_select_active_unit()
 
     def _calculate_turn_order(self) -> list[CombatUnit]:
         """
@@ -100,6 +106,26 @@ class TacticalState:
         if 0 <= self.current_unit_index < len(self.turn_order):
             return self.turn_order[self.current_unit_index]
         return None
+
+    def _auto_select_active_unit(self):
+        """
+        Auto-select the current active player unit and calculate reachable cells/attackable enemies.
+
+        Called when turn switches to a player unit.
+        """
+        current_unit = self.get_current_unit()
+        if current_unit and current_unit.is_player:
+            self.selected_unit = current_unit
+            self.info_unit = None  # Clear any ALT-locked info
+            self.alt_locked_unit = None
+
+            # Calculate reachable movement cells
+            self._calculate_reachable_cells()
+
+            # Calculate attackable enemies
+            self._calculate_attackable_enemies()
+
+            print(f"Auto-selected {current_unit.name}")
 
     def _end_unit_turn(self):
         """End the current unit's turn and move to next unit."""
@@ -186,7 +212,7 @@ class TacticalState:
             self._start_new_round()
             return
 
-        # Execute AI for enemy units
+        # Execute AI for enemy units or auto-select player unit
         current_unit = self.get_current_unit()
         if current_unit and not current_unit.is_player:
             print(f"=== {current_unit.name}'s turn (Enemy, Initiative: {current_unit.initiative}) ===")
@@ -195,6 +221,7 @@ class TacticalState:
             # Start player unit's turn
             if current_unit:
                 print(f"=== {current_unit.name}'s turn (Initiative: {current_unit.initiative}) ===")
+                self._auto_select_active_unit()
 
     def _start_new_round(self):
         """Start a new combat round."""
@@ -210,7 +237,7 @@ class TacticalState:
         # Recalculate turn order (re-randomize ties)
         self.turn_order = self._calculate_turn_order()
 
-        # Execute AI if first unit is enemy
+        # Execute AI if first unit is enemy, otherwise auto-select player unit
         current_unit = self.get_current_unit()
         if current_unit and not current_unit.is_player:
             print(f"=== {current_unit.name}'s turn (Enemy, Initiative: {current_unit.initiative}) ===")
@@ -218,6 +245,7 @@ class TacticalState:
         else:
             if current_unit:
                 print(f"=== {current_unit.name}'s turn (Initiative: {current_unit.initiative}) ===")
+                self._auto_select_active_unit()
 
     def update(self):
         """Update combat logic each frame."""
@@ -226,6 +254,27 @@ class TacticalState:
 
         # Update animation timer (for bouncing effect)
         self.animation_time += 0.016  # Assuming ~60 FPS
+
+        # Track ALT key state
+        keys = pygame.key.get_pressed()
+        self.alt_pressed = keys[pygame.K_LALT] or keys[pygame.K_RALT]
+
+        # Handle ALT + hover: Update info_unit based on hover
+        if self.alt_pressed:
+            # Get mouse position and check for unit under cursor
+            mouse_pos = pygame.mouse.get_pos()
+            grid_coords = self._pixel_to_hex(mouse_pos[0], mouse_pos[1])
+            if grid_coords:
+                hovered_unit = self.battlefield.get_unit_at(*grid_coords)
+                # Show enemy stats on hover
+                if hovered_unit and not hovered_unit.is_player:
+                    self.hovered_unit = hovered_unit
+                else:
+                    self.hovered_unit = None
+        else:
+            # ALT released: Clear hover and locked unit
+            self.hovered_unit = None
+            self.alt_locked_unit = None
 
         # Check if current unit's turn should end (no action points left)
         current_unit = self.get_current_unit()
@@ -245,11 +294,13 @@ class TacticalState:
 
     def handle_click(self, mouse_pos: tuple[int, int]):
         """
-        Handle mouse click on battlefield.
+        Handle left mouse click on battlefield.
 
-        Phase 3 logic:
-        1. First click: Select player unit
-        2. Second click: Attack enemy unit (if in range)
+        New UI system:
+        - Click on player unit: Show stats (but only active unit can act)
+        - Click on enemy: Attack if in range
+        - Click on empty hex: Move if reachable
+        - ALT + Click on enemy: Lock enemy stats until ALT released
 
         Args:
             mouse_pos: (x, y) pixel coordinates of mouse click
@@ -282,53 +333,48 @@ class TacticalState:
 
         x, y = grid_coords
         clicked_unit = self.battlefield.get_unit_at(x, y)
-
-        # Show info for any clicked unit (player or enemy)
-        if clicked_unit:
-            self.info_unit = clicked_unit
-            print(f"Showing info for {clicked_unit.name}")
-
-        # Turn-based movement and combat logic
         current_unit = self.get_current_unit()
 
-        if self.selected_unit is None:
-            # First click: can only select current unit
-            if clicked_unit == current_unit and clicked_unit.is_player:
-                self.selected_unit = clicked_unit
-                print(f"Selected {clicked_unit.name} at ({x}, {y})")
+        # ALT + Click on enemy: Lock enemy stats
+        if self.alt_pressed and clicked_unit and not clicked_unit.is_player:
+            self.alt_locked_unit = clicked_unit
+            print(f"Locked stats for {clicked_unit.name} (ALT)")
+            return
 
-                # Calculate reachable cells for movement (only if unit has action points left)
-                if clicked_unit.current_action_points >= TACTICAL_MOVE_COST:
-                    self._calculate_reachable_cells()
+        # Click on player unit: Show stats
+        if clicked_unit and clicked_unit.is_player:
+            self.selected_unit = clicked_unit
+            print(f"Showing stats for {clicked_unit.name}")
+            return
+
+        # Click on enemy: Try to attack
+        if clicked_unit and not clicked_unit.is_player:
+            # Check if active unit can attack
+            if current_unit and current_unit.is_player:
+                if clicked_unit in self.attackable_enemies:
+                    # Check if unit has AP for attack
+                    if current_unit.current_action_points >= TACTICAL_ATTACK_COST:
+                        self._execute_attack(current_unit, clicked_unit)
+                        # Recalculate attackable enemies after attack
+                        self._calculate_attackable_enemies()
+                        self._calculate_reachable_cells()
+                    else:
+                        print(f"{current_unit.name} has no AP for attack!")
                 else:
-                    print(f"{clicked_unit.name} has no action points left for movement")
-            elif clicked_unit and clicked_unit.is_player and clicked_unit != current_unit:
-                print(f"It's not {clicked_unit.name}'s turn yet!")
-        else:
-            # Have a selected unit - check what was clicked
-            if clicked_unit and not clicked_unit.is_player:
-                # Attack enemy
-                self._execute_attack(self.selected_unit, clicked_unit)
-                self.selected_unit = None
-                self.reachable_cells.clear()
-            elif (x, y) in self.reachable_cells:
-                # Move to reachable cell
+                    print(f"{clicked_unit.name} is out of range!")
+            return
+
+        # Click on empty hex: Try to move
+        if (x, y) in self.reachable_cells:
+            if current_unit and current_unit.is_player:
                 distance = self.reachable_cells[(x, y)]
-                self._move_unit(self.selected_unit, x, y, distance)
+                self._move_unit(current_unit, x, y, distance)
 
-                # Check if unit has action points left for another move
-                if self.selected_unit.current_action_points >= TACTICAL_MOVE_COST:
-                    # Recalculate reachable cells
-                    self._calculate_reachable_cells()
-                else:
-                    # No action points left for movement, deselect
-                    self.selected_unit = None
-                    self.reachable_cells.clear()
-            else:
-                # Deselect (clicked empty space or own unit)
-                print("Deselected")
-                self.selected_unit = None
-                self.reachable_cells.clear()
+                # Recalculate movement and attackable enemies
+                self._calculate_reachable_cells()
+                self._calculate_attackable_enemies()
+        else:
+            print(f"Cannot move to ({x}, {y})")
 
     def _execute_attack(self, attacker: CombatUnit, target: CombatUnit):
         """
@@ -383,6 +429,35 @@ class TacticalState:
 
         print(f"Found {len(self.reachable_cells)} reachable cells (AP: {self.selected_unit.current_action_points})")
 
+    def _calculate_attackable_enemies(self):
+        """
+        Calculate enemies that are within attack range of the selected unit.
+
+        Uses unit.attack_range to determine which enemies can be attacked.
+        """
+        self.attackable_enemies.clear()
+
+        if not self.selected_unit:
+            return
+
+        # Only calculate for active unit (current turn)
+        current_unit = self.get_current_unit()
+        if self.selected_unit != current_unit:
+            return
+
+        # Check each enemy unit
+        for enemy in self.battlefield.enemy_units:
+            distance = self._calculate_hex_distance(
+                self.selected_unit.x, self.selected_unit.y,
+                enemy.x, enemy.y
+            )
+
+            # Check if enemy is within attack range
+            if distance <= self.selected_unit.attack_range:
+                self.attackable_enemies.append(enemy)
+
+        print(f"Found {len(self.attackable_enemies)} attackable enemies (range: {self.selected_unit.attack_range})")
+
     def _move_unit(self, unit: CombatUnit, target_x: int, target_y: int, distance: int):
         """
         Move unit to target position and consume action points.
@@ -410,6 +485,10 @@ class TacticalState:
         # Draw reachable cells (before units so they're not on top)
         if self.reachable_cells:
             self._draw_reachable_cells()
+
+        # Draw attackable enemies with red highlight
+        if self.attackable_enemies:
+            self._draw_attackable_enemies()
 
         # Draw units
         self._draw_units()
@@ -530,6 +609,16 @@ class TacticalState:
             # Blit to screen
             self.screen.blit(overlay, (int(center_x - TACTICAL_HEX_SIZE * 1.5),
                                       int(center_y - TACTICAL_HEX_SIZE * 1.5)))
+
+    def _draw_attackable_enemies(self):
+        """Draw red borders around enemies that can be attacked by the active unit."""
+        for enemy in self.attackable_enemies:
+            center_x, center_y = self._hex_to_pixel(enemy.x, enemy.y)
+            corners = self._get_hex_corners(center_x, center_y)
+
+            # Draw thick red border
+            red_color = (255, 0, 0)
+            pygame.draw.polygon(self.screen, red_color, corners, 3)
 
     def _draw_victory_screen(self):
         """Draw victory window with OK button."""
@@ -757,9 +846,26 @@ class TacticalState:
                 self.screen.blit(text_surf, text_rect)
 
     def _draw_unit_info_panel(self):
-        """Draw unit information panel on the right side of the battlefield."""
-        if not self.info_unit:
-            return  # No unit selected for info display
+        """
+        Draw unit information panel on the right side of the battlefield.
+
+        Priority for display:
+        1. alt_locked_unit (locked with ALT+click)
+        2. hovered_unit (ALT+hover)
+        3. selected_unit (current active player unit or clicked player unit)
+        4. None (during enemy turn if no selection)
+        """
+        # Determine which unit to display
+        display_unit = None
+        if self.alt_locked_unit:
+            display_unit = self.alt_locked_unit
+        elif self.hovered_unit:
+            display_unit = self.hovered_unit
+        elif self.selected_unit:
+            display_unit = self.selected_unit
+
+        if not display_unit:
+            return  # No unit to display
 
         # Panel dimensions and position
         panel_x = 550
@@ -779,19 +885,19 @@ class TacticalState:
         y_offset = panel_y + 10
 
         # Unit name
-        name_text = title_font.render(self.info_unit.name, True, WHITE)
+        name_text = title_font.render(display_unit.name, True, WHITE)
         self.screen.blit(name_text, (panel_x + 10, y_offset))
         y_offset += 40
 
         # Side (Player/Enemy)
-        side_text = "Player" if self.info_unit.is_player else "Enemy"
-        side_color = (100, 255, 100) if self.info_unit.is_player else (255, 100, 100)
+        side_text = "Player" if display_unit.is_player else "Enemy"
+        side_color = (100, 255, 100) if display_unit.is_player else (255, 100, 100)
         side_surf = text_font.render(f"Side: {side_text}", True, side_color)
         self.screen.blit(side_surf, (panel_x + 10, y_offset))
         y_offset += 30
 
         # HP with bar
-        hp_text = text_font.render(f"HP: {self.info_unit.current_hp}/{self.info_unit.max_hp}", True, WHITE)
+        hp_text = text_font.render(f"HP: {display_unit.current_hp}/{display_unit.max_hp}", True, WHITE)
         self.screen.blit(hp_text, (panel_x + 10, y_offset))
         y_offset += 25
 
@@ -803,19 +909,20 @@ class TacticalState:
         # Background (red)
         pygame.draw.rect(self.screen, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
         # Foreground (green, scaled by HP%)
-        hp_percentage = self.info_unit.get_hp_percentage()
+        hp_percentage = display_unit.get_hp_percentage()
         pygame.draw.rect(self.screen, (0, 255, 0), (bar_x, bar_y, int(bar_width * hp_percentage), bar_height))
         y_offset += 20
 
         # Stats
         stats = [
-            f"Action Points: {self.info_unit.current_action_points}/{self.info_unit.action_points}",
-            f"Melee Attack: {self.info_unit.melee_attack}",
-            f"Melee Defence: {self.info_unit.melee_defence}",
-            f"Initiative: {self.info_unit.initiative}",
-            f"Stamina: {self.info_unit.stamina}",
-            f"Morale: {self.info_unit.morale}",
-            f"Base Damage: {self.info_unit.base_damage}"
+            f"Action Points: {display_unit.current_action_points}/{display_unit.action_points}",
+            f"Melee Attack: {display_unit.melee_attack}",
+            f"Melee Defence: {display_unit.melee_defence}",
+            f"Initiative: {display_unit.initiative}",
+            f"Stamina: {display_unit.stamina}",
+            f"Morale: {display_unit.morale}",
+            f"Base Damage: {display_unit.base_damage}",
+            f"Attack Range: {display_unit.attack_range}"
         ]
 
         for stat in stats:

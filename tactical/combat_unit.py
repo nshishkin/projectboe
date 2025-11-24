@@ -43,6 +43,7 @@ class CombatUnit:
         self.morale = stats['morale']
         self.base_damage = stats['base_damage']
         self.action_points = stats['action_points']
+        self.attack_range = stats['attack_range']  # Range for attacks
 
         # Visual color based on ownership
         self.color = stats['color'] if is_player else stats['enemy_color']
@@ -69,9 +70,13 @@ class CombatUnit:
 
     def attack(self, target: 'CombatUnit') -> int:
         """
-        Attack target unit with melee attack.
+        Attack target unit with melee or ranged attack.
 
-        Hit chance = (attacker.melee_attack - target.melee_defence)%
+        Automatically determines attack type based on distance:
+        - Distance 1: Melee attack (melee_attack vs melee_defence)
+        - Distance > 1: Ranged attack (ranged_attack vs ranged_defence)
+
+        Hit chance = (attacker.attack - target.defence)%
         Damage on hit = attacker.base_damage
 
         Args:
@@ -80,8 +85,25 @@ class CombatUnit:
         Returns:
             Amount of damage dealt (0 if missed)
         """
+        # Calculate distance to determine attack type
+        dx = abs(self.x - target.x)
+        dy = abs(self.y - target.y)
+        distance = max(dx, dy)  # Simplified distance
+
+        # Determine attack and defence stats based on distance
+        if distance == 1:
+            # Melee attack
+            attack_stat = self.melee_attack
+            defence_stat = target.melee_defence
+            attack_type = "melee"
+        else:
+            # Ranged attack
+            attack_stat = self.ranged_attack
+            defence_stat = target.ranged_defence
+            attack_type = "ranged"
+
         # Calculate hit chance
-        hit_chance = self.melee_attack - target.melee_defence
+        hit_chance = attack_stat - defence_stat
         hit_chance = max(0, min(100, hit_chance))  # Clamp to 0-100%
 
         # Roll for hit
@@ -92,14 +114,14 @@ class CombatUnit:
             damage = self.base_damage
             is_killed = target.take_damage(damage)
 
-            print(f"{self.name} HIT {target.name} for {damage} damage (chance: {hit_chance}%)")
+            print(f"{self.name} {attack_type.upper()} HIT {target.name} for {damage} damage (chance: {hit_chance}%)")
             if is_killed:
                 print(f"{target.name} has been slain!")
 
             return damage
         else:
             # Miss
-            print(f"{self.name} MISSED {target.name} (chance was: {hit_chance}%)")
+            print(f"{self.name} {attack_type.upper()} MISSED {target.name} (chance was: {hit_chance}%)")
             return 0
 
     def move_to(self, x: int, y: int):
