@@ -8,7 +8,11 @@
       "Bash(tree:*)",
       "Bash(python test_hex_distance.py:*)",
       "Bash(python:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(move /Y \"c:\\projectboe\\tactical\\tactical_state_temp.py\" \"c:\\projectboe\\tactical\\tactical_state.py\")",
+      "Bash(exit 0)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

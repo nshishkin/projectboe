@@ -54,7 +54,7 @@ class Game:
             self.strategic_state.render()
         elif self.current_state == 'tactical':
             if self.tactical_state:
-                self.tactical_state.render()
+                self.tactical_state.renderer.render()
     
     def _render_menu(self):
         """Render menu state (placeholder for Phase 1)."""
@@ -115,9 +115,9 @@ class Game:
                 self.strategic_state.handle_click(event.pos)
             elif self.current_state == 'tactical':
                 if self.tactical_state:
-                    self.tactical_state.handle_click(event.pos)
+                    self.tactical_state.input.handle_click(event.pos)
         # Handle mouse wheel
         elif event.type == pygame.MOUSEWHEEL:
             if self.current_state == 'tactical':
                 if self.tactical_state:
-                    self.tactical_state.handle_mousewheel(event)
+                    self.tactical_state.input.handle_mousewheel(event)
