@@ -145,3 +145,9 @@ UNIT_TYPES = {
         'enemy_color': (200, 100, 200)
     }
 }
+
+# Animation settings (Phase 5)
+TACTICAL_MOVE_SPEED_PLAYER = 3.0  # Hexes per second for player units
+TACTICAL_MOVE_SPEED_AI = 3.0      # Hexes per second for AI units
+TACTICAL_ATTACK_OFFSET = 25       # Pixels to shift during attack animation
+TACTICAL_ATTACK_DURATION = 0.25   # Seconds for attack animation (forward + back)

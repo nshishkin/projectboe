@@ -29,6 +29,10 @@ class CombatUnit:
         self.y = y
         self.is_player = is_player
 
+        # Display coordinates for animations (set by tactical_state)
+        self.display_x: float = 0.0
+        self.display_y: float = 0.0
+
         # Load stats from UNIT_TYPES definition
         stats = UNIT_TYPES[unit_type]
         self.name = stats['name']

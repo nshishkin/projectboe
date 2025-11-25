@@ -94,9 +94,13 @@ class Game:
                 if self.current_state == 'menu':
                     self.change_state('strategic')
             elif event.key == pygame.K_ESCAPE:
-                # ESC from tactical returns to strategic
+                # ESC from tactical: skip animation if playing, otherwise return to strategic
                 if self.current_state == 'tactical':
-                    self.change_state('strategic')
+                    if self.tactical_state and self.tactical_state.animation_queue.is_playing():
+                        self.tactical_state.animation_queue.skip_current()
+                        print("Animation skipped (ESC)")
+                    else:
+                        self.change_state('strategic')
                 # ESC from strategic returns to menu
                 elif self.current_state == 'strategic':
                     self.change_state('menu')

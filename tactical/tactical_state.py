@@ -9,14 +9,17 @@ import random
 from tactical.battlefield import Battlefield
 from tactical.combat_unit import CombatUnit
 from tactical.combat_ai import CombatAI
-from tactical.movement import get_reachable_cells
+from tactical.movement import get_reachable_cells, find_path
+from tactical.animation import AnimationQueue, MoveAnimation, AttackAnimation
 from config.constants import (
     TACTICAL_HEX_SIZE, BATTLEFIELD_ROWS, BATTLEFIELD_COLS,
     BATTLEFIELD_OFFSET_X, BATTLEFIELD_OFFSET_Y,
     BG_COLOR, WHITE, BLACK, GRAY, DARK_GRAY, SCREEN_HEIGHT,
     BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
     BUTTON_HEIGHT, BUTTON_BORDER_WIDTH,
-    TACTICAL_MOVE_COST, TACTICAL_ATTACK_COST
+    TACTICAL_MOVE_COST, TACTICAL_ATTACK_COST,
+    TACTICAL_MOVE_SPEED_PLAYER, TACTICAL_MOVE_SPEED_AI,
+    TACTICAL_ATTACK_OFFSET, TACTICAL_ATTACK_DURATION
 )
 
 
@@ -43,6 +46,17 @@ class TacticalState:
         self.game = game
         self.battlefield = Battlefield(terrain)
         self.battlefield.place_units(player_army, enemy_army)
+
+        # Initialize display coordinates for all units
+        for unit in self.battlefield.get_all_units():
+            pixel_x, pixel_y = self._hex_to_pixel(unit.x, unit.y)
+            unit.display_x = float(pixel_x)
+            unit.display_y = float(pixel_y)
+
+        # Initialize animation queue
+        self.animation_queue = AnimationQueue()
+        self.clock = pygame.time.Clock()
+        self.last_frame_time = pygame.time.get_ticks()
 
         # Initialize AI controller
         self.ai = CombatAI()
@@ -252,8 +266,16 @@ class TacticalState:
         if self.combat_ended:
             return
 
+        # Calculate delta time
+        current_time = pygame.time.get_ticks()
+        delta_time = (current_time - self.last_frame_time) / 1000.0  # Convert to seconds
+        self.last_frame_time = current_time
+
+        # Update animations
+        self.animation_queue.update(delta_time)
+
         # Update animation timer (for bouncing effect)
-        self.animation_time += 0.016  # Assuming ~60 FPS
+        self.animation_time += delta_time
 
         # Track ALT key state
         keys = pygame.key.get_pressed()
@@ -303,10 +325,17 @@ class TacticalState:
         - Click on enemy: Attack if in range
         - Click on empty hex: Move if reachable
         - ALT + Click on enemy: Lock enemy stats until ALT released
+        - Click during animation: Skip current animation
 
         Args:
             mouse_pos: (x, y) pixel coordinates of mouse click
         """
+        # Skip current animation if one is playing
+        if self.animation_queue.is_playing():
+            self.animation_queue.skip_current()
+            print("Animation skipped")
+            return
+
         # Check victory window OK button
         if self.show_victory_window:
             if self.ok_button.collidepoint(mouse_pos):
@@ -382,6 +411,7 @@ class TacticalState:
         """
         Execute attack from attacker to target.
         Costs TACTICAL_ATTACK_COST action points.
+        Creates attack animation before dealing damage.
 
         Args:
             attacker: Unit performing attack
@@ -391,6 +421,10 @@ class TacticalState:
         if attacker.current_action_points < TACTICAL_ATTACK_COST:
             print(f"{attacker.name} has no action points to attack!")
             return
+
+        # Create attack animation
+        attack_anim = AttackAnimation(attacker, target, TACTICAL_ATTACK_OFFSET, TACTICAL_ATTACK_DURATION)
+        self.animation_queue.add(attack_anim)
 
         # Perform attack (uses hit chance formula from CombatUnit)
         damage = attacker.attack(target)
@@ -463,6 +497,7 @@ class TacticalState:
     def _move_unit(self, unit: CombatUnit, target_x: int, target_y: int, distance: int):
         """
         Move unit to target position and consume action points.
+        Creates move animations for each step in the path.
 
         Args:
             unit: Unit to move
@@ -473,6 +508,30 @@ class TacticalState:
         # Calculate action points cost (distance * cost per hex)
         ap_cost = distance * TACTICAL_MOVE_COST
         print(f"Moving {unit.name} from ({unit.x}, {unit.y}) to ({target_x}, {target_y}) (cost: {ap_cost} AP for {distance} hex)")
+
+        # Find path from current position to target
+        blocked = set()
+        for other_unit in self.battlefield.get_all_units():
+            if other_unit != unit:
+                blocked.add((other_unit.x, other_unit.y))
+
+        path = find_path((unit.x, unit.y), (target_x, target_y), blocked)
+
+        if path:
+            # Determine speed based on unit ownership
+            speed = TACTICAL_MOVE_SPEED_PLAYER if unit.is_player else TACTICAL_MOVE_SPEED_AI
+
+            # Create animation for each step in path
+            # Track previous position to chain animations correctly
+            prev_x, prev_y = unit.display_x, unit.display_y
+            for step_x, step_y in path:
+                target_pixel_x, target_pixel_y = self._hex_to_pixel(step_x, step_y)
+                anim = MoveAnimation(unit, float(target_pixel_x), float(target_pixel_y), speed, prev_x, prev_y)
+                self.animation_queue.add(anim)
+                # Next animation starts where this one ends
+                prev_x, prev_y = float(target_pixel_x), float(target_pixel_y)
+
+        # Update logical position immediately
         unit.move_to(target_x, target_y)
         unit.current_action_points -= ap_cost
         print(f"{unit.name} has {unit.current_action_points} action points left")
@@ -538,10 +597,12 @@ class TacticalState:
         current_unit = self.get_current_unit()
 
         for unit in self.battlefield.get_all_units():
-            center_x, center_y = self._hex_to_pixel(unit.x, unit.y)
+            # Use display coordinates (animated position)
+            center_x = unit.display_x
+            center_y = unit.display_y
 
-            # Add bouncing animation for current unit
-            if unit == current_unit and not self.combat_ended:
+            # Add bouncing animation for current unit (only when not animating movement/attack)
+            if unit == current_unit and not self.combat_ended and not self.animation_queue.is_playing():
                 # Sin wave animation: ±5 pixels, 2 second cycle
                 bounce_offset = math.sin(self.animation_time * math.pi) * 5
                 center_y += bounce_offset
