@@ -5,7 +5,9 @@
       "Bash(python -c:*)",
       "Bash(python main.py:*)",
       "Bash(timeout 5 python:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(python test_hex_distance.py:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

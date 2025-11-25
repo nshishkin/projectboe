@@ -61,22 +61,24 @@ class Battlefield:
 
         # Place player units vertically in column 2, starting from middle
         player_start_col = 1
-        player_start_row = self.rows // 2  # Middle of battlefield
+        player_start_row = self.rows // 2 # Middle of battlefield
 
         for i, unit_type in enumerate(player_army):
             x = player_start_col
             y = player_start_row + i
-            unit = CombatUnit(unit_type, x, y, is_player=True)
+            unit_name = f"Party{i}"
+            unit = CombatUnit(unit_type, x, y, is_player=True, unit_name=unit_name)
             self.player_units.append(unit)
 
         # Place enemy units vertically in second column from end, starting from middle
         enemy_start_col = self.cols - 2 # second column from the end
-        enemy_start_row = self.rows // 2  # Middle of battlefield
+        enemy_start_row = self.rows // 2 # Middle of battlefield
 
         for i, unit_type in enumerate(enemy_army):
             x = enemy_start_col
             y = enemy_start_row + i
-            unit = CombatUnit(unit_type, x, y, is_player=False)
+            unit_name = f"Enemy{i}"
+            unit = CombatUnit(unit_type, x, y, is_player=False, unit_name=unit_name)
             self.enemy_units.append(unit)
 
     def get_unit_at(self, x: int, y: int) -> CombatUnit | None:

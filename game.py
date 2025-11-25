@@ -112,3 +112,8 @@ class Game:
             elif self.current_state == 'tactical':
                 if self.tactical_state:
                     self.tactical_state.handle_click(event.pos)
+        # Handle mouse wheel
+        elif event.type == pygame.MOUSEWHEEL:
+            if self.current_state == 'tactical':
+                if self.tactical_state:
+                    self.tactical_state.handle_mousewheel(event)

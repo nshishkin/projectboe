@@ -14,7 +14,7 @@ class CombatUnit:
     and can perform combat actions like attacking other units.
     """
 
-    def __init__(self, unit_type: str, x: int, y: int, is_player: bool):
+    def __init__(self, unit_type: str, x: int, y: int, is_player: bool, unit_name: str | None = None):
         """
         Initialize combat unit with stats from UNIT_TYPES.
 
@@ -23,6 +23,7 @@ class CombatUnit:
             x: Grid X position on battlefield
             y: Grid Y position on battlefield
             is_player: True if player's unit, False if enemy
+            unit_name: Personal name for the unit (e.g., 'Party0', 'Enemy0')
         """
         self.unit_type = unit_type
         self.x = x
@@ -35,7 +36,8 @@ class CombatUnit:
 
         # Load stats from UNIT_TYPES definition
         stats = UNIT_TYPES[unit_type]
-        self.name = stats['name']
+        self.class_name = stats['name']  # Class name (Infantry, Cavalry, etc.)
+        self.unit_name = unit_name if unit_name else stats['name']  # Personal name
         self.max_hp = stats['max_hp']
         self.current_hp = stats['max_hp']
         self.melee_attack = stats['melee_attack']
@@ -118,14 +120,14 @@ class CombatUnit:
             damage = self.base_damage
             is_killed = target.take_damage(damage)
 
-            print(f"{self.name} {attack_type.upper()} HIT {target.name} for {damage} damage (chance: {hit_chance}%)")
+            print(f"{self.get_display_name()} {attack_type.upper()} HIT {target.get_display_name()} for {damage} damage (chance: {hit_chance}%)")
             if is_killed:
-                print(f"{target.name} has been slain!")
+                print(f"{target.get_display_name()} has been slain!")
 
             return damage
         else:
             # Miss
-            print(f"{self.name} {attack_type.upper()} MISSED {target.name} (chance was: {hit_chance}%)")
+            print(f"{self.get_display_name()} {attack_type.upper()} MISSED {target.get_display_name()} (chance was: {hit_chance}%)")
             return 0
 
     def move_to(self, x: int, y: int):
@@ -191,7 +193,16 @@ class CombatUnit:
         """
         return self.current_hp / self.max_hp if self.max_hp > 0 else 0.0
 
+    def get_display_name(self) -> str:
+        """
+        Get display name for the unit in format: 'Party0 (Infantry)'.
+
+        Returns:
+            Formatted display name
+        """
+        return f"{self.unit_name} ({self.class_name})"
+
     def __repr__(self) -> str:
         """String representation for debugging."""
         owner = "Player" if self.is_player else "Enemy"
-        return f"{owner} {self.name} at ({self.x},{self.y}) - HP: {self.current_hp}/{self.max_hp}"
+        return f"{owner} {self.get_display_name()} at ({self.x},{self.y}) - HP: {self.current_hp}/{self.max_hp}"

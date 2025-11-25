@@ -5,6 +5,7 @@ Handles unit movement and attack animations with smooth interpolation.
 
 from typing import TYPE_CHECKING
 import math
+from config.constants import TACTICAL_HEX_SIZE
 
 if TYPE_CHECKING:
     from tactical.combat_unit import CombatUnit
@@ -69,9 +70,10 @@ class MoveAnimation(Animation):
         dy = target_y - self.start_y
         self.total_distance = math.sqrt(dx * dx + dy * dy)
 
-        # Assuming hex_size of ~52 pixels (tactical hex size 30 * sqrt(3))
-        # 1 hex = ~52 pixels, so we can convert speed
-        pixels_per_second = speed * 52
+        # Calculate pixels per hex (hex height for flat-top hexagons)
+        # For flat-top hexagons: height = sqrt(3) * radius
+        pixels_per_hex = TACTICAL_HEX_SIZE * math.sqrt(3)
+        pixels_per_second = speed * pixels_per_hex
         self.duration = self.total_distance / pixels_per_second if pixels_per_second > 0 else 0
         self.elapsed = 0.0
 

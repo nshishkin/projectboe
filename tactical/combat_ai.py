@@ -20,13 +20,19 @@ class CombatAI:
     3. Plan movement and attack actions
     """
 
-    def __init__(self):
-        """Initialize AI controller."""
+    def __init__(self, log_callback=None):
+        """
+        Initialize AI controller.
+
+        Args:
+            log_callback: Optional callback function for logging messages
+        """
         # Weights for target evaluation (can be tuned for balance)
         self.weight_low_hp = 40      # Prioritize wounded targets
         self.weight_distance = 5     # Prefer closer targets
         self.weight_ranged = 25      # Prioritize ranged units
         self.weight_archer = 25      # Prioritize archers
+        self.log_callback = log_callback or print
 
     def select_action(self, unit: CombatUnit, battlefield) -> dict:
         """
@@ -119,7 +125,7 @@ class CombatAI:
         Plan the best action to engage a target.
 
         Priority:
-        1. Attack if target is adjacent and we have AP
+        1. Attack if target is within attack range and we have AP
         2. Move closer to target if we have AP
         3. Skip turn if no AP
 
@@ -131,21 +137,22 @@ class CombatAI:
         Returns:
             dict: Action to perform
         """
-        # Check if we can attack immediately
-        if self._is_adjacent(unit, target):
+        # Check if we can attack immediately (within attack range)
+        distance = self._calculate_distance(unit, target)
+        if distance <= unit.attack_range:
             if unit.current_action_points >= TACTICAL_ATTACK_COST:
-                print(f"AI: {unit.name} attacks {target.name}")
+                self.log_callback(f"AI: {unit.get_display_name()} attacks {target.get_display_name()} (range: {distance}/{unit.attack_range})")
                 return {'type': 'attack', 'target': target}
 
         # Try to move closer to target
         if unit.current_action_points >= TACTICAL_MOVE_COST:
             move_position = self._find_best_move_towards(unit, target, battlefield)
             if move_position:
-                print(f"AI: {unit.name} moves from ({unit.x},{unit.y}) towards {target.name}")
+                self.log_callback(f"AI: {unit.get_display_name()} moves from ({unit.x},{unit.y}) towards {target.get_display_name()}")
                 return {'type': 'move', 'position': move_position, 'target': target}
 
         # No valid actions available
-        print(f"AI: {unit.name} skips turn (no AP or valid moves)")
+        self.log_callback(f"AI: {unit.get_display_name()} skips turn (no AP or valid moves)")
         return {'type': 'skip'}
 
     def _calculate_distance(self, unit1: CombatUnit, unit2: CombatUnit) -> int:
@@ -159,16 +166,16 @@ class CombatAI:
         Returns:
             Distance in hexes
         """
-        # Convert offset coordinates to cube coordinates for accurate hex distance
+        # Convert even-q offset coordinates to cube coordinates for accurate hex distance
         x1, y1 = unit1.x, unit1.y
         x2, y2 = unit2.x, unit2.y
 
-        # Offset to cube coordinate conversion
+        # Even-q offset to cube coordinate conversion
         q1 = x1
-        r1 = y1 - (x1 - (x1 & 1)) // 2
+        r1 = y1 - (x1 + (x1 & 1)) // 2
 
         q2 = x2
-        r2 = y2 - (x2 - (x2 & 1)) // 2
+        r2 = y2 - (x2 + (x2 & 1)) // 2
 
         # Cube distance formula
         distance = (abs(q1 - q2) + abs(r1 - r2) + abs(q1 + r1 - q2 - r2)) // 2
@@ -231,7 +238,7 @@ class CombatAI:
             if distance_to_target < best_distance:
                 best_distance = distance_to_target
                 best_position = (x, y)
-            elif distance_to_target == best_distance and move_distance < reachable.get(best_position, 999):
+            elif distance_to_target == best_distance and best_position is not None and move_distance < reachable.get(best_position, 999):
                 # Same distance to target but cheaper to reach
                 best_position = (x, y)
 
@@ -248,12 +255,12 @@ class CombatAI:
         Returns:
             Distance in hexes
         """
-        # Convert offset to cube coordinates
+        # Convert even-q offset to cube coordinates
         q1 = x1
-        r1 = y1 - (x1 - (x1 & 1)) // 2
+        r1 = y1 - (x1 + (x1 & 1)) // 2
 
         q2 = x2
-        r2 = y2 - (x2 - (x2 & 1)) // 2
+        r2 = y2 - (x2 + (x2 & 1)) // 2
 
         # Cube distance
         distance = (abs(q1 - q2) + abs(r1 - r2) + abs(q1 + r1 - q2 - r2)) // 2

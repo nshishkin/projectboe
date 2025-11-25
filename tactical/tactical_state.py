@@ -58,8 +58,14 @@ class TacticalState:
         self.clock = pygame.time.Clock()
         self.last_frame_time = pygame.time.get_ticks()
 
-        # Initialize AI controller
-        self.ai = CombatAI()
+        # Combat log for UI display (initialize before AI)
+        self.combat_log: list[str] = []  # List of recent combat messages
+        self.max_log_messages = 15  # Maximum messages to keep in log
+        self.log_scroll_offset = 0  # Scroll offset for combat log
+        self.log_max_scroll = 0  # Maximum scroll value
+
+        # Initialize AI controller with logging callback
+        self.ai = CombatAI(log_callback=self._log_message)
 
         # Calculate turn order by initiative (highest first)
         self.turn_order = self._calculate_turn_order()
@@ -79,6 +85,7 @@ class TacticalState:
         self.winner = None  # 'player' or 'enemy'
         self.show_victory_window = False
         self.show_hex_coords = False  # Debug mode for showing hex coordinates
+        self.pending_turn_end = False  # Flag to end turn after animations complete
 
         # Combat buttons (bottom)
         button_y = SCREEN_HEIGHT - BUTTON_HEIGHT - 10
@@ -89,17 +96,17 @@ class TacticalState:
         # Victory window OK button (centered)
         self.ok_button = pygame.Rect(0, 0, 150, BUTTON_HEIGHT)  # Position calculated in render
 
-        print(f"Tactical combat initialized: {len(player_army)} vs {len(enemy_army)}")
-        print(f"=== ROUND {self.current_round} STARTED ===")
+        self._log_message(f"Tactical combat initialized: {len(player_army)} vs {len(enemy_army)}")
+        self._log_message(f"=== ROUND {self.current_round} STARTED ===")
 
         # Announce first unit's turn (execute AI if enemy)
         first_unit = self.get_current_unit()
         if first_unit:
             if not first_unit.is_player:
-                print(f"=== {first_unit.name}'s turn (Enemy, Initiative: {first_unit.initiative}) ===")
+                self._log_message(f"=== {first_unit.get_display_name()}'s turn (Enemy, Initiative: {first_unit.initiative}) ===")
                 self._execute_ai_turn(first_unit)
             else:
-                print(f"=== {first_unit.name}'s turn (Initiative: {first_unit.initiative}) ===")
+                self._log_message(f"=== {first_unit.get_display_name()}'s turn (Initiative: {first_unit.initiative}) ===")
                 # Auto-select first player unit
                 self._auto_select_active_unit()
 
@@ -139,16 +146,21 @@ class TacticalState:
             # Calculate attackable enemies
             self._calculate_attackable_enemies()
 
-            print(f"Auto-selected {current_unit.name}")
+            self._log_message(f"Auto-selected {current_unit.get_display_name()}")
 
     def _end_unit_turn(self):
         """End the current unit's turn and move to next unit."""
         current_unit = self.get_current_unit()
         if current_unit:
             current_unit.has_acted = True
-            print(f"{current_unit.name}'s turn ended")
+            self._log_message(f"{current_unit.get_display_name()}'s turn ended")
 
-        self._next_unit_turn()
+        # Don't advance turn while animations are playing
+        if self.animation_queue.is_playing():
+            self._log_message("Delaying turn switch until animations complete")
+            self.pending_turn_end = True
+        else:
+            self._next_unit_turn()
 
     def _execute_ai_turn(self, unit: CombatUnit):
         """
@@ -194,7 +206,7 @@ class TacticalState:
         # End the unit's turn
         self._end_unit_turn()
 
-    def _calculate_hex_distance(self, x1: int, y1: int, x2: int, y2: int) -> int:
+    def  _calculate_hex_distance(self, x1: int, y1: int, x2: int, y2: int) -> int:
         """
         Calculate hex distance between two positions.
 
@@ -205,12 +217,13 @@ class TacticalState:
         Returns:
             Distance in hexes
         """
-        # Convert offset to cube coordinates
+        # Convert even-q offset to cube coordinates
+        # For even-q: r = row - (col + (col & 1)) // 2
         q1 = x1
-        r1 = y1 - (x1 - (x1 & 1)) // 2
+        r1 = y1 - (x1 + (x1 & 1)) // 2
 
         q2 = x2
-        r2 = y2 - (x2 - (x2 & 1)) // 2
+        r2 = y2 - (x2 + (x2 & 1)) // 2
 
         # Cube distance
         distance = (abs(q1 - q2) + abs(r1 - r2) + abs(q1 + r1 - q2 - r2)) // 2
@@ -229,12 +242,12 @@ class TacticalState:
         # Execute AI for enemy units or auto-select player unit
         current_unit = self.get_current_unit()
         if current_unit and not current_unit.is_player:
-            print(f"=== {current_unit.name}'s turn (Enemy, Initiative: {current_unit.initiative}) ===")
+            self._log_message(f"=== {current_unit.get_display_name()}'s turn (Enemy, Initiative: {current_unit.initiative}) ===")
             self._execute_ai_turn(current_unit)
         else:
             # Start player unit's turn
             if current_unit:
-                print(f"=== {current_unit.name}'s turn (Initiative: {current_unit.initiative}) ===")
+                self._log_message(f"=== {current_unit.get_display_name()}'s turn (Initiative: {current_unit.initiative}) ===")
                 self._auto_select_active_unit()
 
     def _start_new_round(self):
@@ -242,7 +255,7 @@ class TacticalState:
         self.current_round += 1
         self.current_unit_index = 0
 
-        print(f"\n=== ROUND {self.current_round} STARTED ===")
+        self._log_message(f"\n=== ROUND {self.current_round} STARTED ===")
 
         # Restore movement points for all units
         for unit in self.turn_order:
@@ -254,11 +267,11 @@ class TacticalState:
         # Execute AI if first unit is enemy, otherwise auto-select player unit
         current_unit = self.get_current_unit()
         if current_unit and not current_unit.is_player:
-            print(f"=== {current_unit.name}'s turn (Enemy, Initiative: {current_unit.initiative}) ===")
+            self._log_message(f"=== {current_unit.get_display_name()}'s turn (Enemy, Initiative: {current_unit.initiative}) ===")
             self._execute_ai_turn(current_unit)
         else:
             if current_unit:
-                print(f"=== {current_unit.name}'s turn (Initiative: {current_unit.initiative}) ===")
+                self._log_message(f"=== {current_unit.get_display_name()}'s turn (Initiative: {current_unit.initiative}) ===")
                 self._auto_select_active_unit()
 
     def update(self):
@@ -273,6 +286,13 @@ class TacticalState:
 
         # Update animations
         self.animation_queue.update(delta_time)
+
+        # Check if we need to end turn after animations complete
+        if self.pending_turn_end and not self.animation_queue.is_playing():
+            self._log_message("Animations complete - switching turn now")
+            self.pending_turn_end = False
+            self._next_unit_turn()
+            return  # Skip rest of update to avoid double-processing
 
         # Update animation timer (for bouncing effect)
         self.animation_time += delta_time
@@ -298,23 +318,25 @@ class TacticalState:
             self.hovered_unit = None
             self.alt_locked_unit = None
 
-        # Check if current unit's turn should end (no action points left)
-        current_unit = self.get_current_unit()
-        if current_unit and current_unit.current_action_points <= 0 and not current_unit.has_acted:
-            print(f"{current_unit.name} has no action points left - turn ending")
-            self._end_unit_turn()
+        # Check if current unit's turn should end (1 or less action points left)
+        # But only if animations are not playing
+        if not self.animation_queue.is_playing():
+            current_unit = self.get_current_unit()
+            if current_unit and current_unit.current_action_points <= 1 and not current_unit.has_acted:
+                self._log_message(f"{current_unit.get_display_name()} has no action points left - turn ending")
+                self._end_unit_turn()
 
         # Check victory/defeat conditions
         if not self.battlefield.enemy_units:
             self.combat_ended = True
             self.winner = 'player'
             self.show_victory_window = True
-            print("VICTORY! All enemies defeated!")
+            self._log_message("VICTORY! All enemies defeated!")
         elif not self.battlefield.player_units:
             self.combat_ended = True
             self.winner = 'enemy'
             self.show_victory_window = True  # Show defeat window too
-            print("DEFEAT! All units lost!")
+            self._log_message("DEFEAT! All units lost!")
 
     def handle_click(self, mouse_pos: tuple[int, int]):
         """
@@ -333,7 +355,7 @@ class TacticalState:
         # Skip current animation if one is playing
         if self.animation_queue.is_playing():
             self.animation_queue.skip_current()
-            print("Animation skipped")
+            self._log_message("Animation skipped")
             return
 
         # Check victory window OK button
@@ -357,6 +379,15 @@ class TacticalState:
         if self.combat_ended:
             return
 
+        # Check if click is on combat log panel to handle scrolling
+        panel_x, panel_y = 820, 50
+        panel_width, panel_height = 440, 400
+        log_panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+        
+        if log_panel_rect.collidepoint(mouse_pos):
+            # Click on log panel - allow scrolling but don't do other actions
+            return
+
         # Convert pixel to hex grid coordinates
         grid_coords = self._pixel_to_hex(mouse_pos[0], mouse_pos[1])
         if not grid_coords:
@@ -369,13 +400,13 @@ class TacticalState:
         # ALT + Click on enemy: Lock enemy stats
         if self.alt_pressed and clicked_unit and not clicked_unit.is_player:
             self.alt_locked_unit = clicked_unit
-            print(f"Locked stats for {clicked_unit.name} (ALT)")
+            self._log_message(f"Locked stats for {clicked_unit.get_display_name()} (ALT)")
             return
 
         # Click on player unit: Show stats
         if clicked_unit and clicked_unit.is_player:
             self.selected_unit = clicked_unit
-            print(f"Showing stats for {clicked_unit.name}")
+            self._log_message(f"Showing stats for {clicked_unit.get_display_name()}")
             return
 
         # Click on enemy: Try to attack
@@ -390,9 +421,9 @@ class TacticalState:
                         self._calculate_attackable_enemies()
                         self._calculate_reachable_cells()
                     else:
-                        print(f"{current_unit.name} has no AP for attack!")
+                        self._log_message(f"{current_unit.get_display_name()} has no AP for attack!")
                 else:
-                    print(f"{clicked_unit.name} is out of range!")
+                    self._log_message(f"{clicked_unit.get_display_name()} is out of range!")
             return
 
         # Click on empty hex: Try to move
@@ -405,7 +436,28 @@ class TacticalState:
                 self._calculate_reachable_cells()
                 self._calculate_attackable_enemies()
         else:
-            print(f"Cannot move to ({x}, {y})")
+            self._log_message(f"Cannot move to ({x}, {y})")
+
+    def handle_mousewheel(self, event):
+        """
+        Handle mouse wheel events for scrolling combat log.
+        
+        Args:
+            event: pygame mouse wheel event with x, y attributes
+        """
+        # Check if mouse is over the combat log panel
+        mouse_pos = pygame.mouse.get_pos()
+        panel_x, panel_y = 820, 50
+        panel_width, panel_height = 440, 400
+        log_panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+        
+        if log_panel_rect.collidepoint(mouse_pos):
+            # Scroll the combat log
+            scroll_amount = event.y * 20  # Adjust sensitivity
+            new_scroll = self.log_scroll_offset - scroll_amount  # Negative because scrolling up means moving content down
+            
+            # Clamp scroll to valid range
+            self.log_scroll_offset = max(0, min(new_scroll, self.log_max_scroll))
 
     def _execute_attack(self, attacker: CombatUnit, target: CombatUnit):
         """
@@ -419,7 +471,7 @@ class TacticalState:
         """
         # Check if attacker has action points for attack
         if attacker.current_action_points < TACTICAL_ATTACK_COST:
-            print(f"{attacker.name} has no action points to attack!")
+            self._log_message(f"{attacker.get_display_name()} has no action points to attack!")
             return
 
         # Create attack animation
@@ -431,7 +483,7 @@ class TacticalState:
 
         # Consume action points for attack
         attacker.current_action_points -= TACTICAL_ATTACK_COST
-        print(f"{attacker.name} has {attacker.current_action_points} action points left")
+        self._log_message(f"{attacker.get_display_name()} has {attacker.current_action_points} action points left")
 
         # Remove dead units
         self.battlefield.remove_dead_units()
@@ -463,7 +515,7 @@ class TacticalState:
             blocked
         )
 
-        print(f"Found {len(self.reachable_cells)} reachable cells (AP: {self.selected_unit.current_action_points})")
+        self._log_message(f"Found {len(self.reachable_cells)} reachable cells (AP: {self.selected_unit.current_action_points})")
 
     def _calculate_attackable_enemies(self):
         """
@@ -492,7 +544,27 @@ class TacticalState:
             if distance <= self.selected_unit.attack_range:
                 self.attackable_enemies.append(enemy)
 
-        print(f"Found {len(self.attackable_enemies)} attackable enemies (range: {self.selected_unit.attack_range})")
+        # Calculate all hexes that the unit can attack (excluding its own hex)
+        attackable_hexes = []
+        for x in range(BATTLEFIELD_COLS):
+            for y in range(BATTLEFIELD_ROWS):
+                distance = self._calculate_hex_distance(
+                    self.selected_unit.x, self.selected_unit.y,
+                    x, y
+                )
+                if distance <= self.selected_unit.attack_range and distance > 0:  # Exclude the unit's own hex
+                    attackable_hexes.append((x, y))
+
+        # Log with coordinates if any enemies found
+        count = len(self.attackable_enemies)
+        if count > 0:
+            coords = ", ".join([f"({e.x},{e.y})" for e in self.attackable_enemies])
+            self._log_message(f"Found {count} attackable enemies (range: {self.selected_unit.attack_range}): {coords}")
+        else:
+            self._log_message(f"Found 0 attackable enemies (range: {self.selected_unit.attack_range})")
+
+        # Log all attackable hexes
+        self._log_message(f"Attackable hexes (range {self.selected_unit.attack_range}): {attackable_hexes}")
 
     def _move_unit(self, unit: CombatUnit, target_x: int, target_y: int, distance: int):
         """
@@ -507,7 +579,6 @@ class TacticalState:
         """
         # Calculate action points cost (distance * cost per hex)
         ap_cost = distance * TACTICAL_MOVE_COST
-        print(f"Moving {unit.name} from ({unit.x}, {unit.y}) to ({target_x}, {target_y}) (cost: {ap_cost} AP for {distance} hex)")
 
         # Find path from current position to target
         blocked = set()
@@ -516,6 +587,13 @@ class TacticalState:
                 blocked.add((other_unit.x, other_unit.y))
 
         path = find_path((unit.x, unit.y), (target_x, target_y), blocked)
+
+        # Format path for logging
+        if path:
+            path_str = " -> ".join([f"({x},{y})" for x, y in path])
+            self._log_message(f"Moving {unit.get_display_name()}: {path_str} (cost: {ap_cost} AP)")
+        else:
+            self._log_message(f"Moving {unit.get_display_name()} from ({unit.x}, {unit.y}) to ({target_x}, {target_y}) (cost: {ap_cost} AP)")
 
         if path:
             # Determine speed based on unit ownership
@@ -531,10 +609,16 @@ class TacticalState:
                 # Next animation starts where this one ends
                 prev_x, prev_y = float(target_pixel_x), float(target_pixel_y)
 
+            # Update display position to end of path immediately
+            # This ensures that if AI does multiple moves in one turn,
+            # the next animation will start from the correct position
+            unit.display_x = prev_x
+            unit.display_y = prev_y
+
         # Update logical position immediately
         unit.move_to(target_x, target_y)
         unit.current_action_points -= ap_cost
-        print(f"{unit.name} has {unit.current_action_points} action points left")
+        self._log_message(f"{unit.get_display_name()} has {unit.current_action_points} action points left")
 
     def render(self):
         """Render the battlefield and units."""
@@ -550,6 +634,7 @@ class TacticalState:
         # Draw attackable enemies with red highlight
         if self.attackable_enemies:
             self._draw_attackable_enemies()
+        
 
         # Draw units
         self._draw_units()
@@ -568,6 +653,9 @@ class TacticalState:
 
         # Draw unit info panel
         self._draw_unit_info_panel()
+
+        # Draw combat log panel
+        self._draw_combat_log()
 
         # Draw debug buttons (if combat not ended)
         if not self.combat_ended:
@@ -682,6 +770,7 @@ class TacticalState:
             # Draw thick red border
             red_color = (255, 0, 0)
             pygame.draw.polygon(self.screen, red_color, corners, 3)
+
 
     def _draw_victory_screen(self):
         """Draw victory/defeat window with OK button."""
@@ -841,7 +930,7 @@ class TacticalState:
         if current_unit:
             side = "Player" if current_unit.is_player else "Enemy"
             unit_color = (100, 255, 100) if current_unit.is_player else (255, 100, 100)
-            unit_text = font.render(f"Current Turn: {current_unit.name} ({side})", True, unit_color)
+            unit_text = font.render(f"Current Turn: {current_unit.get_display_name()} ({side})", True, unit_color)
             self.screen.blit(unit_text, (20, 45))
 
     def _draw_debug_buttons(self):
@@ -864,12 +953,12 @@ class TacticalState:
         """Handle End Turn button click - manually end current unit's turn."""
         current_unit = self.get_current_unit()
         if current_unit and current_unit.is_player:
-            print(f"Player manually ended {current_unit.name}'s turn")
+            self._log_message(f"Player manually ended {current_unit.get_display_name()}'s turn")
             self._end_unit_turn()
 
     def _handle_debug_finish(self):
         """Handle debug finish button - kill all enemies and show victory."""
-        print("DEBUG: Finishing battle instantly")
+        self._log_message("DEBUG: Finishing battle instantly")
 
         # Kill all enemy units
         for enemy in self.battlefield.enemy_units:
@@ -885,7 +974,7 @@ class TacticalState:
 
     def _handle_victory_ok(self):
         """Handle OK button in victory window - return to strategic map."""
-        print("Returning to strategic map")
+        self._log_message("Returning to strategic map")
         self.game.change_state('strategic')
 
     def _toggle_hex_coords(self):
@@ -914,6 +1003,113 @@ class TacticalState:
 
                 # Draw coordinate text
                 self.screen.blit(text_surf, text_rect)
+
+    def _calculate_log_content_height(self):
+        """Calculate total height of log content in pixels."""
+        text_font = pygame.font.Font(None, 20)
+        line_height = 24
+        total_height = 0
+        
+        for message in self.combat_log:
+            if len(message) > 50:
+                # Calculate number of lines for wrapped message
+                words = message.split(' ')
+                current_line = []
+                line_count = 1
+                for word in words:
+                    test_line = ' '.join(current_line + [word])
+                    if len(test_line) <= 50:
+                        current_line.append(word)
+                    else:
+                        if current_line:
+                            line_count += 1
+                        current_line = [word]
+                total_height += line_count * line_height
+            else:
+                total_height += line_height
+        
+        return total_height
+
+    def _log_message(self, message: str):
+        """
+        Add message to combat log and print to terminal.
+
+        Args:
+            message: Message to log
+        """
+        print(message)
+        self.combat_log.append(message)
+        # Keep only last max_log_messages
+        if len(self.combat_log) > self.max_log_messages:
+            self.combat_log.pop(0)
+        
+        # Calculate max scroll based on content
+        total_content_height = self._calculate_log_content_height()
+        available_height = 400 - 45  # panel_height - title_space
+        self.log_max_scroll = max(0, total_content_height - available_height)
+
+        # Auto-scroll to bottom when new message is added
+        self.log_scroll_offset = self.log_max_scroll
+
+    def _draw_combat_log(self):
+        """Draw combat log panel to the right of unit info panel."""
+        # Panel dimensions and position (to the right of unit info panel)
+        panel_x = 820
+        panel_y = 50
+        panel_width = 440
+        panel_height = 400
+
+        # Draw panel background
+        panel_rect = pygame.Rect(panel_x, panel_y, panel_width, panel_height)
+        pygame.draw.rect(self.screen, DARK_GRAY, panel_rect)
+        pygame.draw.rect(self.screen, WHITE, panel_rect, 2)  # Border
+
+        # Title
+        title_font = pygame.font.Font(None, 28)
+        title_text = title_font.render("Combat Log", True, WHITE)
+        self.screen.blit(title_text, (panel_x + 10, panel_y + 10))
+
+        # Draw log messages (newest at bottom)
+        text_font = pygame.font.Font(None, 20)
+        y_offset = panel_y + 45 - self.log_scroll_offset
+        line_height = 24
+
+        for message in self.combat_log:
+            if len(message) > 50:
+                # Simple word wrap
+                words = message.split(' ')
+                current_line = []
+                for word in words:
+                    test_line = ' '.join(current_line + [word])
+                    if len(test_line) <= 50:
+                        current_line.append(word)
+                    else:
+                        # Draw current line
+                        if current_line:
+                            line_text = text_font.render(' '.join(current_line), True, WHITE)
+                            # Only draw if it's within the visible area
+                            if y_offset + line_height >= panel_y + 45 and y_offset <= panel_y + panel_height:
+                                self.screen.blit(line_text, (panel_x + 10, y_offset))
+                            y_offset += line_height
+                        current_line = [word]
+                # Draw remaining line
+                if current_line:
+                    line_text = text_font.render(' '.join(current_line), True, WHITE)
+                    # Only draw if it's within the visible area
+                    if y_offset + line_height >= panel_y + 45 and y_offset <= panel_y + panel_height:
+                        self.screen.blit(line_text, (panel_x + 10, y_offset))
+                    y_offset += line_height
+            else:
+                # Short message, draw as-is
+                line_text = text_font.render(message, True, WHITE)
+                # Only draw if it's within the visible area
+                if y_offset + line_height >= panel_y + 45 and y_offset <= panel_y + panel_height:
+                    self.screen.blit(line_text, (panel_x + 10, y_offset))
+                y_offset += line_height
+
+            # Stop if we've drawn beyond the panel
+            if y_offset > panel_y + panel_height:
+                break
 
     def _draw_unit_info_panel(self):
         """
@@ -955,7 +1151,7 @@ class TacticalState:
         y_offset = panel_y + 10
 
         # Unit name
-        name_text = title_font.render(display_unit.name, True, WHITE)
+        name_text = title_font.render(display_unit.get_display_name(), True, WHITE)
         self.screen.blit(name_text, (panel_x + 10, y_offset))
         y_offset += 40
 
