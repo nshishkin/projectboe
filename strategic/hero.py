@@ -58,4 +58,37 @@ class Hero:
 
     def __repr__(self) -> str:
         """String representation for debugging."""
-        return f"Hero(x={self.x}, y={self.y}, movement={self.current_movement}/{self.movement_points})"   
+        return f"Hero(x={self.x}, y={self.y}, movement={self.current_movement}/{self.movement_points})"
+
+    def to_dict(self) -> dict:
+        """
+        Serialize hero to dictionary for saving.
+
+        Returns:
+            Dictionary containing hero state
+        """
+        return {
+            'x': self.x,
+            'y': self.y,
+            'movement_points': self.movement_points,
+            'current_movement': self.current_movement,
+            'army': [unit_type for unit_type in self.army]  # Save army composition only
+            # Note: Current HP not saved, units will be restored to full HP
+        }
+
+    @staticmethod
+    def from_dict(data: dict) -> 'Hero':
+        """
+        Create hero from dictionary.
+
+        Args:
+            data: Dictionary containing hero state
+
+        Returns:
+            Hero instance
+        """
+        hero = Hero(data['x'], data['y'])
+        hero.movement_points = data.get('movement_points', HERO_MOVEMENT_POINTS)
+        hero.current_movement = data.get('current_movement', HERO_MOVEMENT_POINTS)
+        hero.army = data.get('army', [])
+        return hero

@@ -7,7 +7,8 @@
       "Bash(timeout 5 python:*)",
       "Bash(tree:*)",
       "Bash(python test_hex_distance.py:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

@@ -45,3 +45,33 @@ class Province:
     def __repr__(self) -> str:
         """String representation for debugging."""
         return f"Province({self.x}, {self.y}, {self.terrain_type})"
+
+    def to_dict(self) -> dict:
+        """
+        Serialize province to dictionary for saving.
+
+        Returns:
+            Dictionary containing province state
+        """
+        return {
+            'x': self.x,
+            'y': self.y,
+            'terrain_type': self.terrain_type,
+            'owner': self.owner
+            # Note: encounter is NOT saved, will be regenerated
+        }
+
+    @staticmethod
+    def from_dict(data: dict) -> 'Province':
+        """
+        Create province from dictionary.
+
+        Args:
+            data: Dictionary containing province state
+
+        Returns:
+            Province instance
+        """
+        province = Province(data['x'], data['y'], data['terrain_type'])
+        province.owner = data.get('owner', None)
+        return province

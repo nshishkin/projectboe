@@ -105,6 +105,10 @@ class Game:
                 elif self.current_state == 'strategic':
                     self.change_state('menu')
 
+            # Pass key events to strategic state for save/load handling
+            if self.current_state == 'strategic' and self.strategic_state:
+                self.strategic_state.handle_key(event.key)
+
         # Handle mouse clicks
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if self.current_state == 'strategic':

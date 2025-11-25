@@ -7,6 +7,7 @@ import math
 
 from strategic.map_generator import generate_map, get_province_at
 from strategic.hero import Hero
+from strategic.province import Province
 from strategic.input_handler import pixel_to_hex, hex_to_pixel
 from strategic.movement import get_reachable_cells
 from config.data_definitions import TERRAIN_TYPES
@@ -18,6 +19,7 @@ from config.constants import (
     BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
     BUTTON_HEIGHT, BUTTON_BORDER_WIDTH, UNIT_TYPES
 )
+import save_system
 
 class StrategicState:
     def __init__(self, screen, game):
@@ -272,6 +274,10 @@ class StrategicState:
         Args:
             province: Province where combat happens
         """
+        # Autosave before entering combat
+        self.save_state('autosave_combat')
+        print("[Autosave] Before combat")
+
         # Use predefined armies from data files
         player_army = HERO_ARMY
         enemy_army = TEST_ENEMY_ARMY
@@ -332,6 +338,10 @@ class StrategicState:
         """End current turn and advance to next."""
         self.current_turn += 1
 
+        # Autosave at start of new turn
+        self.save_state('autosave_turn')
+        print("[Autosave] Turn start")
+
         # Restore hero movement points
         self.hero.restore_movement()
 
@@ -373,3 +383,108 @@ class StrategicState:
 
                 # Draw coordinate text
                 self.screen.blit(text_surf, text_rect)
+
+    def save_state(self, slot: str = 'quicksave', slot_number: int = None) -> bool:
+        """
+        Save current strategic state to file.
+
+        Args:
+            slot: Save slot type ('autosave_combat', 'autosave_turn', 'quicksave', 'manual')
+            slot_number: Slot number for manual saves
+
+        Returns:
+            True if save successful
+        """
+        state_dict = {
+            'version': '1.0',
+            'turn': self.current_turn,
+            'hero': self.hero.to_dict(),
+            'map': [[province.to_dict() for province in row] for row in self.map_grid]
+        }
+
+        success = save_system.save_game(state_dict, slot, slot_number)
+        if success:
+            slot_name = f"{slot}{slot_number if slot_number else ''}"
+            print(f"Game saved to slot: {slot_name}")
+        return success
+
+    def load_state(self, slot: str = 'quicksave', slot_number: int = None) -> bool:
+        """
+        Load strategic state from file.
+
+        Args:
+            slot: Save slot type
+            slot_number: Slot number for manual saves
+
+        Returns:
+            True if load successful
+        """
+        state_dict = save_system.load_game(slot, slot_number)
+        if not state_dict:
+            print("Failed to load game - save file not found or corrupted")
+            return False
+
+        try:
+            # Restore turn counter
+            self.current_turn = state_dict.get('turn', 1)
+
+            # Restore hero
+            self.hero = Hero.from_dict(state_dict['hero'])
+
+            # Restore map
+            map_data = state_dict['map']
+            self.map_grid = [[Province.from_dict(prov_data) for prov_data in row] for row in map_data]
+
+            # Recalculate reachable cells
+            self._calculate_reachable_cells()
+
+            slot_name = f"{slot}{slot_number if slot_number else ''}"
+            print(f"Game loaded from slot: {slot_name}")
+            print(f"Turn: {self.current_turn}, Hero at ({self.hero.x}, {self.hero.y})")
+            return True
+
+        except Exception as e:
+            print(f"Error loading game state: {e}")
+            return False
+
+    def handle_key(self, key: int):
+        """
+        Handle keyboard input.
+
+        Hotkeys:
+            F5 - Quicksave (save2.json)
+            F6 - Load autosave before combat (save0.json)
+            F7 - Load autosave turn start (save1.json)
+            F9 - Load quicksave (save2.json)
+
+        Args:
+            key: Pygame key constant
+        """
+        if key == pygame.K_F5:
+            # Quicksave
+            self.save_state('quicksave')
+            print("Quicksave created (F5)")
+
+        elif key == pygame.K_F6:
+            # Load autosave before combat
+            if save_system.save_exists('autosave_combat'):
+                self.load_state('autosave_combat')
+                print("Loaded autosave before combat (F6)")
+            else:
+                print("No autosave before combat found (F6)")
+
+        elif key == pygame.K_F7:
+            # Load autosave turn start
+            if save_system.save_exists('autosave_turn'):
+                self.load_state('autosave_turn')
+                print("Loaded autosave turn start (F7)")
+            else:
+                print("No autosave turn start found (F7)")
+
+        elif key == pygame.K_F9:
+            # Quickload
+            if save_system.save_exists('quicksave'):
+                self.load_state('quicksave')
+                print("Quickload loaded (F9)")
+            else:
+                print("No quicksave found (F9)")
