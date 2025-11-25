@@ -700,6 +700,22 @@ class TacticalState:
             pygame.draw.circle(self.screen, unit.color, (int(center_x), int(center_y)), radius)
             pygame.draw.circle(self.screen, BLACK, (int(center_x), int(center_y)), radius, 2)
 
+            # Draw directional "beak" (cone)
+            beak_size = int(radius * 0.5)
+            if unit.is_player:
+                # Player units face right
+                beak_tip = (int(center_x + radius), int(center_y))
+                beak_top = (int(center_x + radius * 0.3), int(center_y - beak_size))
+                beak_bottom = (int(center_x + radius * 0.3), int(center_y + beak_size))
+            else:
+                # Enemy units face left
+                beak_tip = (int(center_x - radius), int(center_y))
+                beak_top = (int(center_x - radius * 0.3), int(center_y - beak_size))
+                beak_bottom = (int(center_x - radius * 0.3), int(center_y + beak_size))
+
+            pygame.draw.polygon(self.screen, unit.color, [beak_tip, beak_top, beak_bottom])
+            pygame.draw.polygon(self.screen, BLACK, [beak_tip, beak_top, beak_bottom], 2)
+
             # Draw HP bar
             self._draw_hp_bar(unit, center_x, center_y)
 
