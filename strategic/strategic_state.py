@@ -19,7 +19,7 @@ from config.constants import (
     BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
     BUTTON_HEIGHT, BUTTON_BORDER_WIDTH, UNIT_TYPES
 )
-import save_system
+from strategic import save_system
 
 class StrategicState:
     def __init__(self, screen, game):

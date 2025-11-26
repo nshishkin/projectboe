@@ -1,7 +1,7 @@
 """
 Simple test for save/load system.
 """
-import save_system
+from strategic import save_system
 from strategic.hero import Hero
 from strategic.province import Province
 
