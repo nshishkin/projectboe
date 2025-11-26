@@ -4,7 +4,10 @@ Hexagonal grid geometry utilities for tactical combat.
 Provides coordinate conversions and geometric calculations for even-q vertical layout hexagons.
 """
 import math
-from config.constants import TACTICAL_HEX_SIZE, BATTLEFIELD_ROWS, BATTLEFIELD_COLS
+from config.constants import (
+    TACTICAL_HEX_SIZE, BATTLEFIELD_ROWS, BATTLEFIELD_COLS,
+    BATTLEFIELD_OFFSET_X, BATTLEFIELD_OFFSET_Y
+)
 
 
 def calculate_hex_distance(x1: int, y1: int, x2: int, y2: int) -> int:
@@ -47,24 +50,21 @@ def hex_to_pixel(grid_x: int, grid_y: int) -> tuple[int, int]:
     Returns:
         Tuple of (pixel_x, pixel_y) for hex center
     """
-    # Hex dimensions for flat-top hexagons
-    # width = size * 2, height = size * sqrt(3)
+    # # Hex dimensions for flat-top hexagons
+    # # width = size * 2, height = size * sqrt(3)
     hex_width = TACTICAL_HEX_SIZE * 2
     hex_height = TACTICAL_HEX_SIZE * math.sqrt(3)
 
-    # Horizontal spacing: 3/4 of hex width (columns overlap by 1/4)
-    horiz_spacing = hex_width * 0.75
+    # Odd rows are offset by height
+    y_offset = (hex_height/2) if grid_x % 2 == 1 else 0
 
-    # Calculate pixel position
-    pixel_x = grid_x * horiz_spacing + TACTICAL_HEX_SIZE
+    # Horizontal spacing
+    pixel_x = BATTLEFIELD_OFFSET_X + (grid_x+1) * (hex_width * 3/4) 
 
-    # Even columns (0, 2, 4...) are offset upward by half hex height
-    if grid_x % 2 == 0:
-        pixel_y = grid_y * hex_height + hex_height / 2
-    else:
-        pixel_y = grid_y * hex_height + hex_height
+    # Vertical spacing (adjusted for proper interlocking)
+    pixel_y = BATTLEFIELD_OFFSET_Y +  (grid_y+1) * hex_height - y_offset
 
-    return int(pixel_x), int(pixel_y)
+    return (int(pixel_x), int(pixel_y))
 
 
 def pixel_to_hex(mouse_x: int, mouse_y: int) -> tuple[int, int] | None:
@@ -85,9 +85,13 @@ def pixel_to_hex(mouse_x: int, mouse_y: int) -> tuple[int, int] | None:
     hex_height = TACTICAL_HEX_SIZE * math.sqrt(3)
     horiz_spacing = hex_width * 0.75
 
+    # Adjust for battlefield offset
+    adjusted_x = mouse_x - BATTLEFIELD_OFFSET_X
+    adjusted_y = mouse_y - BATTLEFIELD_OFFSET_Y
+
     # Approximate grid position
-    approx_x = int((mouse_x - TACTICAL_HEX_SIZE) / horiz_spacing)
-    approx_y = int((mouse_y - hex_height / 2) / hex_height)
+    approx_x = int((adjusted_x - TACTICAL_HEX_SIZE) / horiz_spacing)
+    approx_y = int((adjusted_y - hex_height / 2) / hex_height)
 
     # Check this hex and neighbors (to handle edge cases near hex boundaries)
     candidates = []

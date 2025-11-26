@@ -12,7 +12,8 @@
       "Bash(find:*)",
       "Bash(move /Y \"c:\\projectboe\\tactical\\tactical_state_temp.py\" \"c:\\projectboe\\tactical\\tactical_state.py\")",
       "Bash(exit 0)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(timeout 10 python:*)"
     ],
     "deny": [],
     "ask": []
