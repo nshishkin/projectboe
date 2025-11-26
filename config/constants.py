@@ -143,7 +143,56 @@ UNIT_TYPES = {
         'attack_range': 4,  # Ranged attack
         'color': (200, 200, 100),
         'enemy_color': (200, 100, 200)
+    },
+    'Debug_strong': {
+        'name': 'Debug_strong', #deliberately too strong, used to fasttest win or loss
+        'max_hp': 999,
+        'melee_attack': 999,
+        'ranged_attack': 0,
+        'melee_defence': 8,  # Больше защиты
+        'ranged_defence': 3,
+        'stamina': 85,
+        'initiative': 95,
+        'morale': 45,
+        'base_damage': 200,
+        'action_points': 9,
+        'attack_range': 1,  # Melee range
+        'color': (150, 150, 255),
+        'enemy_color': (255, 150, 150)
+    },
+    'Debug_weak': {
+        'name': 'Debug_weak', #deliberately too weak, used to fasttest win or loss
+        'max_hp': 1,
+        'melee_attack': 1,
+        'ranged_attack': 0,
+        'melee_defence': 8,  # Больше защиты
+        'ranged_defence': 3,
+        'stamina': 85,
+        'initiative': 95,
+        'morale': 45,
+        'base_damage': 1,
+        'action_points': 9,
+        'attack_range': 1,  # Melee range
+        'color': (150, 150, 255),
+        'enemy_color': (255, 150, 150)
+    },
+    'Debug_movement': {
+        'name': 'movement', #a lot of hp, low attack - for testing pathfinding
+        'max_hp': 999,
+        'melee_attack': 1,
+        'ranged_attack': 0,
+        'melee_defence': 8,  # Больше защиты
+        'ranged_defence': 3,
+        'stamina': 85,
+        'initiative': 95,
+        'morale': 45,
+        'base_damage': 1,
+        'action_points': 9,
+        'attack_range': 1,  # Melee range
+        'color': (150, 150, 255),
+        'enemy_color': (255, 150, 150)
     }
+
 }
 
 # Animation settings (Phase 5)

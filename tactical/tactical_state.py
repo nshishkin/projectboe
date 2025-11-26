@@ -180,6 +180,10 @@ class TacticalState:
         Args:
             unit: Enemy unit to control
         """
+        # Check if combat already ended (prevents infinite recursion)
+        if not self.battlefield.player_units or not self.battlefield.enemy_units:
+            return
+
         # Keep executing actions until unit has no AP left or decides to skip
         max_actions = 10  # Safety limit to prevent infinite loops
         action_count = 0
@@ -215,32 +219,22 @@ class TacticalState:
         # End the unit's turn
         self._end_unit_turn()
 
-    def  _calculate_hex_distance(self, x1: int, y1: int, x2: int, y2: int) -> int:
-        """
-        Calculate hex distance between two positions.
-
-        Args:
-            x1, y1: Starting position
-            x2, y2: Ending position
-
-        Returns:
-            Distance in hexes
-        """
-        # Convert even-q offset to cube coordinates
-        # For even-q: r = row - (col + (col & 1)) // 2
-        q1 = x1
-        r1 = y1 - (x1 + (x1 & 1)) // 2
-
-        q2 = x2
-        r2 = y2 - (x2 + (x2 & 1)) // 2
-
-        # Cube distance
-        distance = (abs(q1 - q2) + abs(r1 - r2) + abs(q1 + r1 - q2 - r2)) // 2
-
-        return distance
-
     def _next_unit_turn(self):
         """Advance to next unit's turn."""
+        # Check victory/defeat immediately (prevents infinite AI loop)
+        if not self.battlefield.enemy_units:
+            self.combat_ended = True
+            self.winner = 'player'
+            self.show_victory_window = True
+            self._log_message("VICTORY! All enemies defeated!")
+            return
+        elif not self.battlefield.player_units:
+            self.combat_ended = True
+            self.winner = 'enemy'
+            self.show_victory_window = True
+            self._log_message("DEFEAT! All units lost!")
+            return
+
         self.current_unit_index += 1
 
         # Check if round is complete
@@ -261,6 +255,20 @@ class TacticalState:
 
     def _start_new_round(self):
         """Start a new combat round."""
+        # Check victory/defeat immediately (prevents infinite AI loop)
+        if not self.battlefield.enemy_units:
+            self.combat_ended = True
+            self.winner = 'player'
+            self.show_victory_window = True
+            self._log_message("VICTORY! All enemies defeated!")
+            return
+        elif not self.battlefield.player_units:
+            self.combat_ended = True
+            self.winner = 'enemy'
+            self.show_victory_window = True
+            self._log_message("DEFEAT! All units lost!")
+            return
+
         self.current_round += 1
         self.current_unit_index = 0
 
@@ -335,17 +343,17 @@ class TacticalState:
                 self._log_message(f"{current_unit.get_display_name()} has no action points left - turn ending")
                 self._end_unit_turn()
 
-        # Check victory/defeat conditions
-        if not self.battlefield.enemy_units:
-            self.combat_ended = True
-            self.winner = 'player'
-            self.show_victory_window = True
-            self._log_message("VICTORY! All enemies defeated!")
-        elif not self.battlefield.player_units:
-            self.combat_ended = True
-            self.winner = 'enemy'
-            self.show_victory_window = True  # Show defeat window too
-            self._log_message("DEFEAT! All units lost!")
+            # Check victory/defeat conditions (only when animations finished)
+            if not self.battlefield.enemy_units:
+                self.combat_ended = True
+                self.winner = 'player'
+                self.show_victory_window = True
+                self._log_message("VICTORY! All enemies defeated!")
+            elif not self.battlefield.player_units:
+                self.combat_ended = True
+                self.winner = 'enemy'
+                self.show_victory_window = True  # Show defeat window too
+                self._log_message("DEFEAT! All units lost!")
 
     def _execute_attack(self, attacker: CombatUnit, target: CombatUnit):
         """
