@@ -62,16 +62,20 @@ The game follows a **layered state machine** architecture with clear separation 
 8. **hero.py** - Hero position, army composition, inventory, movement
 
 ### Tactical Layer
-9. **tactical_state.py** - Manages turn-based combat, victory conditions, retreat/auto-resolve
-10. **battlefield.py** - 10x16 tactical grid, terrain generation, unit placement
-11. **combat_unit.py** - Combat unit with HP, position, stats, attack/defend logic
-12. **combat_ai.py** - Basic enemy AI for target selection and movement
+9. **tactical_state.py** - Manages turn-based combat, victory conditions, animation queue, combat log
+10. **tactical_renderer.py** - Handles all tactical rendering (battlefield, units, UI, combat log)
+11. **tactical_input.py** - Processes tactical input (mouse clicks, wheel scrolling, button interactions)
+12. **battlefield.py** - 10x16 tactical grid, terrain generation, unit placement
+13. **combat_unit.py** - Combat unit with HP, position, stats, display coordinates, attack/defend logic
+14. **combat_ai.py** - Priority-based enemy AI for target selection and movement
+15. **animation.py** - Animation system (MoveAnimation, AttackAnimation, AnimationQueue)
+16. **hex_geometry.py** - Hex coordinate conversions (pixel ↔ grid) and distance calculations
 
 ### Shared Systems
-13. **renderer.py** - Pygame rendering (strategic map, battlefield, UI, colored squares/circles)
-14. **input_handler.py** - Mouse/keyboard input processing, coordinate conversion
-15. **save_system.py** - JSON save/load for strategic state only
-16. **utils.py** - Helper functions (distance, pathfinding, general utilities)
+17. **renderer.py** - Pygame rendering for strategic map (battlefield now uses tactical_renderer.py)
+18. **input_handler.py** - Mouse/keyboard input for strategic map (hex coordinate conversion)
+19. **save_system.py** - JSON save/load for strategic state only
+20. **utils.py** - Helper functions (distance, pathfinding, general utilities)
 
 ---
 
@@ -114,17 +118,31 @@ strategic_state.start_combat(province)
 ### Tactical Combat Turn
 ```
 Player's turn:
-  → input_handler.get_tactical_input() returns action
-  → tactical_state.execute_turn(selected_unit, action)
+  → tactical_input.handle_click(mouse_pos) processes click
+    → Converts pixel to hex coordinates via hex_geometry.pixel_to_hex()
+    → If clicking enemy: tactical_state._execute_attack()
+      → Creates AttackAnimation and adds to animation_queue
+      → Deducts action points, calculates damage
+    → If clicking empty hex: tactical_state._move_unit()
+      → Uses BFS pathfinding to get path
+      → Creates chain of MoveAnimation for each step
+      → Deducts action points based on distance
 
 Enemy turn:
   → For each enemy unit:
-    → combat_ai.get_action(unit) returns AI decision
-    → tactical_state.execute_turn(unit, action)
+    → combat_ai.choose_action(unit, battlefield, targets) returns AI decision
+    → tactical_state executes action with animations
+    → Logs action to combat log
+
+Animation playback:
+  → tactical_state.update(dt) processes animation queue
+  → animation_queue.update(dt) interpolates display positions
+  → Units have separate display_x/y from grid x/y for smooth movement
+  → Click during animation skips current animation
 
 After each turn:
   → tactical_state.check_victory()
-    → If victory/defeat: return to strategic with results
+    → If victory/defeat: show victory window, return to strategic with results
 ```
 
 ### Returning to Strategic Layer
@@ -158,6 +176,79 @@ Load:
 
 ---
 
+## Animation System Architecture
+
+The tactical combat layer uses a sequential animation queue system for smooth visual feedback.
+
+### Animation Components
+
+**Base Animation Class**
+- Abstract base with `update(dt)` and `is_finished()` methods
+- Delta time based for frame-rate independence
+- Returns True when animation completes
+
+**MoveAnimation**
+- Interpolates unit from start (display_x, display_y) to target pixel position
+- Speed configurable (default: 3 hexes/sec)
+- Supports explicit start positions for animation chaining
+- Calculates duration based on pixel distance and hex size
+
+**AttackAnimation**
+- Shifts unit toward target by TACTICAL_ATTACK_OFFSET pixels (25px)
+- Two-phase: move toward target, then return to original position
+- Fixed duration (default: 0.25s total)
+- Uses `attack_phase` to track forward/backward movement
+
+**AnimationQueue**
+- Sequential playback of animations (FIFO queue)
+- Only one animation plays at a time
+- Supports skipping current animation on user click
+- Updates current animation with delta time each frame
+
+### Display Coordinate System
+
+Units maintain two sets of coordinates:
+- **Grid coordinates (x, y)**: Logical position on battlefield, updated immediately
+- **Display coordinates (display_x, display_y)**: Visual position, interpolated by animations
+
+This separation allows:
+- Instant game logic updates (pathfinding, range checks)
+- Smooth visual transitions without blocking gameplay
+- Multi-step movement with chained animations
+
+### Multi-Hex Movement
+
+When a unit moves multiple hexes:
+1. BFS pathfinding calculates complete path
+2. For each hex in path, create MoveAnimation with explicit start position
+3. Chain animations in queue (second starts where first ends)
+4. Update logical position immediately, display position animates
+
+Example:
+```python
+prev_x, prev_y = unit.display_x, unit.display_y
+for step_x, step_y in path:
+    target_pixel_x, target_pixel_y = hex_to_pixel(step_x, step_y)
+    anim = MoveAnimation(unit, target_pixel_x, target_pixel_y, speed, prev_x, prev_y)
+    animation_queue.add(anim)
+    prev_x, prev_y = target_pixel_x, target_pixel_y
+```
+
+### Hex Coordinate System
+
+Both strategic and tactical layers now use **odd-q vertical layout**:
+- Odd columns (x % 2 == 1) offset downward by hex_height/2
+- Horizontal spacing: `hex_width * 3/4` (75% of hex width)
+- Includes battlefield offsets (BATTLEFIELD_OFFSET_X/Y = 50, 50)
+
+**hex_geometry.py** provides:
+- `hex_to_pixel(grid_x, grid_y)`: Grid → pixel center coordinates
+- `pixel_to_hex(mouse_x, mouse_y)`: Mouse → grid coordinates (nearest neighbor)
+- `calculate_hex_distance(x1, y1, x2, y2)`: Hex distance via cube coordinates
+- `get_hex_corners(center_x, center_y)`: 6 corner points for rendering
+
+---
+
 ## Key Design Principles
 
 1. **State Machine Pattern** - Clean separation between game modes (menu/strategic/tactical)
@@ -165,7 +256,9 @@ Load:
 3. **Grid-Based** - Both strategic (8x8) and tactical (10x16) use simple grid systems
 4. **Minimal Dependencies** - Only Pygame required, pure Python data structures
 5. **Strategic-Only Saves** - Simpler implementation, combat can restart if interrupted
-6. **Module Size** - Each file <300 lines for maintainability
+6. **Module Size** - Each file <300 lines for maintainability (larger files split into renderer/input/state)
+7. **Separation of Concerns** - Rendering, input, game logic, and geometry separated into dedicated modules
+8. **Animation System** - Display coordinates separate from logical positions for smooth interpolation
 
 ---
 
@@ -176,19 +269,29 @@ boe/
 ├── game.py
 ├── constants.py
 ├── data_definitions.py
+├── config/
+│   └── constants.py
 ├── strategic/
 │   ├── strategic_state.py
 │   ├── map_generator.py
 │   ├── province.py
-│   └── hero.py
+│   ├── hero.py
+│   └── input_handler.py
 ├── tactical/
 │   ├── tactical_state.py
+│   ├── tactical_renderer.py      # NEW - Rendering logic
+│   ├── tactical_input.py          # NEW - Input handling
 │   ├── battlefield.py
 │   ├── combat_unit.py
-│   └── combat_ai.py
-└── shared/
-    ├── renderer.py
-    ├── input_handler.py
-    ├── save_system.py
-    └── utils.py
+│   ├── combat_ai.py
+│   ├── animation.py               # NEW - Animation system
+│   └── hex_geometry.py            # NEW - Hex coordinate utilities
+├── shared/
+│   ├── renderer.py                # Strategic map rendering
+│   ├── save_system.py             # TODO
+│   └── utils.py                   # TODO
+└── docs/
+    ├── architecture_plan.md
+    ├── progress.md
+    └── game_design.md
 ```

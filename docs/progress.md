@@ -65,9 +65,37 @@ Implementation Phases
   - Victory/defeat window with auto-display
 
   ---
-  Phase 5: Polish and Save System (Week 5)
+  Phase 5: Animation System and Refactoring (Week 5) ✅ COMPLETED
 
-  Goal: Playable vertical slice
+  Goal: Add visual polish and improve code organization
+
+  1. ✅ Implement animation.py - Animation system with MoveAnimation, AttackAnimation, AnimationQueue
+  2. ✅ Add display coordinates to combat_unit.py for smooth interpolation
+  3. ✅ Integrate animation queue into tactical_state.py with delta time
+  4. ✅ Implement animation skipping (click during animation)
+  5. ✅ Refactor tactical layer: separate rendering, input, and geometry modules
+  6. ✅ Add combat logging system with scrollable message history
+  7. ✅ Unify hex coordinate systems (odd-q vertical layout for both strategic and tactical)
+  8. ✅ Add hex_geometry.py - Centralized hex coordinate utilities
+  9. ✅ Fix multi-hex animation bug (chaining animations correctly)
+
+  Files: animation.py, combat_unit.py, tactical_state.py, tactical_renderer.py, tactical_input.py, hex_geometry.py, constants.py
+
+  Additional features implemented:
+  - Configurable animation speeds (3 hexes/sec for movement, 0.25s for attacks)
+  - Sequential animation queue with proper chaining for multi-hex movement
+  - TacticalRenderer class for separation of rendering logic (~400 lines)
+  - TacticalInput class for input handling and button management
+  - Combat log with automatic word wrapping and mouse wheel scrolling
+  - Directional visual indicators ("beaks") on units
+  - Unit display names (e.g., "Party0 (Infantry)")
+  - Debug controls (instant finish, hex coordinate display toggle)
+  - Unified hex geometry with BATTLEFIELD_OFFSET support
+
+  ---
+  Phase 6: Save System and Encounters (Week 6)
+
+  Goal: Playable vertical slice with persistence
 
   1. Implement save_system.py - JSON save/load
   2. Add save/load to strategic_state.py
@@ -76,13 +104,12 @@ Implementation Phases
   5. Improve map generation (constraints, connectivity)
   6. Add UI for retreat and auto-resolve options
   7. Update hero.py army composition persistence
-  8. Polish rendering (better colors, unit info display)
-  9. Test: Can play multiple sessions with save/load
+  8. Test: Can play multiple sessions with save/load
 
-  Files: save_system.py, utils.py, map_generator.py, province.py, strategic_state.py, polish across existing files
+  Files: save_system.py, utils.py, map_generator.py, province.py, strategic_state.py
 
   ---
-  Phase 6: Content and Balance (Week 6)
+  Phase 7: Content and Balance (Week 7)
 
   Goal: Expand content using data definitions
 
