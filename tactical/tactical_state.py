@@ -522,8 +522,10 @@ class TacticalState:
             speed = TACTICAL_MOVE_SPEED_PLAYER if unit.is_player else TACTICAL_MOVE_SPEED_AI
 
             # Create animation for each step in path
-            # Track previous position to chain animations correctly
-            prev_x, prev_y = unit.display_x, unit.display_y
+            # Calculate start position from logical grid coordinates
+            # (display coords may not be updated yet if animations are queued)
+            start_pixel_x, start_pixel_y = hex_to_pixel(unit.x, unit.y)
+            prev_x, prev_y = float(start_pixel_x), float(start_pixel_y)
             for step_x, step_y in path:
                 target_pixel_x, target_pixel_y = hex_to_pixel(step_x, step_y)
                 anim = MoveAnimation(unit, float(target_pixel_x), float(target_pixel_y), speed, prev_x, prev_y)
