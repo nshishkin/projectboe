@@ -14,6 +14,7 @@ from config.constants import (
     BUTTON_COLOR, BUTTON_HOVER_COLOR, BUTTON_TEXT_COLOR,
     BUTTON_HEIGHT, BUTTON_BORDER_WIDTH
 )
+from shared.sprite_loader import get_sprite_loader
 
 
 class TacticalRenderer:
@@ -31,6 +32,7 @@ class TacticalRenderer:
             state: TacticalState instance
         """
         self.state = state
+        self.sprite_loader = get_sprite_loader()
 
     def render(self):
         """Render the battlefield and units."""
@@ -80,18 +82,33 @@ class TacticalRenderer:
 
     def _draw_battlefield(self):
         """Draw all battlefield hexagons."""
+        hex_diameter = int(TACTICAL_HEX_SIZE * 2)
+
         for row in range(BATTLEFIELD_ROWS):
             for col in range(BATTLEFIELD_COLS):
                 center_x, center_y = hex_to_pixel(col, row)
                 corners = get_hex_corners(center_x, center_y)
 
-                # Terrain color (from battlefield.grid)
-                # Phase 3: uniform color, just use gray
-                terrain_color = GRAY
+                # Try to load terrain sprite (use tactical terrain based on battlefield terrain)
+                # For now, use same terrain type for all hexes (could be enhanced later)
+                terrain_type = getattr(self.state, 'terrain_type', 'plains')
+                terrain_sprite = self.sprite_loader.load_terrain_sprite(
+                    terrain_type,
+                    'tactical',
+                    size=(hex_diameter, hex_diameter),
+                    rotate=30  # Convert corner-top hexes to flat-top
+                )
 
-                # Draw hex
-                pygame.draw.polygon(self.state.screen, terrain_color, corners)
-                pygame.draw.polygon(self.state.screen, BLACK, corners, 1)  # Border
+                if terrain_sprite:
+                    # Draw sprite centered on hex
+                    sprite_rect = terrain_sprite.get_rect(center=(int(center_x), int(center_y)))
+                    self.state.screen.blit(terrain_sprite, sprite_rect)
+                else:
+                    # Fallback: Draw filled hex with gray color
+                    pygame.draw.polygon(self.state.screen, GRAY, corners)
+
+                # Draw hex border
+                pygame.draw.polygon(self.state.screen, BLACK, corners, 1)
 
 
     def _draw_units(self):

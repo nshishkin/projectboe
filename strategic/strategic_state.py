@@ -20,6 +20,7 @@ from config.constants import (
     BUTTON_HEIGHT, BUTTON_BORDER_WIDTH, UNIT_TYPES
 )
 from strategic import save_system
+from shared.sprite_loader import get_sprite_loader
 
 class StrategicState:
     def __init__(self, screen, game, scenario_preset: str = 'default'):
@@ -50,6 +51,9 @@ class StrategicState:
 
         # Debug mode for showing hex coordinates
         self.show_hex_coords = False
+
+        # Load sprite loader
+        self.sprite_loader = get_sprite_loader()
 
         # UI Buttons (positioned at bottom of screen)
         button_y = SCREEN_HEIGHT - BUTTON_HEIGHT - 10
@@ -92,20 +96,32 @@ class StrategicState:
     def _draw_province(self, province):
         """
         Draw a single province hexagon.
-        
+
         Args:
             province: Province object to draw
         """
-        # Get terrain color
-        terrain_color = TERRAIN_TYPES[province.terrain_type]['color']
-        
         # Get hex center position in pixels
         center_x, center_y = hex_to_pixel(province.x, province.y)
         # Get hexagon corner points
         corners = self._get_hex_corners(center_x, center_y)
-        
-        # Draw filled hexagon (terrain color)
-        pygame.draw.polygon(self.screen, terrain_color, corners)
+
+        # Try to load terrain sprite
+        hex_diameter = int(STRATEGIC_HEX_SIZE * 2)
+        terrain_sprite = self.sprite_loader.load_terrain_sprite(
+            province.terrain_type,
+            'strategic',
+            size=(hex_diameter, hex_diameter),
+            rotate=30  # Convert corner-top hexes to flat-top
+        )
+
+        if terrain_sprite:
+            # Draw sprite centered on hex
+            sprite_rect = terrain_sprite.get_rect(center=(int(center_x), int(center_y)))
+            self.screen.blit(terrain_sprite, sprite_rect)
+        else:
+            # Fallback: Draw filled hexagon with terrain color
+            terrain_color = TERRAIN_TYPES[province.terrain_type]['color']
+            pygame.draw.polygon(self.screen, terrain_color, corners)
         
         # Draw hexagon border (black outline)
         pygame.draw.polygon(self.screen, BLACK, corners, 2)
