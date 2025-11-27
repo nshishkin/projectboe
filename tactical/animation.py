@@ -106,35 +106,42 @@ class AttackAnimation(Animation):
     """Animates unit attack with forward and backward motion."""
 
     def __init__(self, unit: 'CombatUnit', target_unit: 'CombatUnit',
-                 offset: float, duration: float):
-        """
-        Initialize attack animation.
+                    offset: float, duration: float):
+            """
+            Initialize attack animation.
 
-        Args:
-            unit: The attacking unit
-            target_unit: The target unit
-            offset: Distance to shift towards target in pixels
-            duration: Total animation duration in seconds
-        """
-        super().__init__(unit)
-        self.start_x = unit.display_x
-        self.start_y = unit.display_y
-        self.offset = offset
-        self.duration = duration
-        self.elapsed = 0.0
+            Args:
+                unit: The attacking unit
+                target_unit: The target unit
+                offset: Distance to shift towards target in pixels
+                duration: Total animation duration in seconds
+            """
+            super().__init__(unit)
+            
+            # Calculate start position from logical grid position
+            # This ensures correct position even if display coords haven't caught up
+            from tactical.hex_geometry import hex_to_pixel
+            start_pixel_x, start_pixel_y = hex_to_pixel(unit.x, unit.y)
+            self.start_x = float(start_pixel_x)
+            self.start_y = float(start_pixel_y)
+            
+            self.offset = offset
+            self.duration = duration
+            self.elapsed = 0.0
 
-        # Calculate direction to target (simplified - diagonal)
-        dx = target_unit.display_x - unit.display_x
-        dy = target_unit.display_y - unit.display_y
-        distance = math.sqrt(dx * dx + dy * dy)
+            # Calculate direction to target (using target's logical position too)
+            target_pixel_x, target_pixel_y = hex_to_pixel(target_unit.x, target_unit.y)
+            dx = target_pixel_x - self.start_x
+            dy = target_pixel_y - self.start_y
+            distance = math.sqrt(dx * dx + dy * dy)
 
-        if distance > 0:
-            # Normalize and scale by offset
-            self.offset_x = (dx / distance) * offset
-            self.offset_y = (dy / distance) * offset
-        else:
-            self.offset_x = 0
-            self.offset_y = 0
+            if distance > 0:
+                # Normalize and scale by offset
+                self.offset_x = (dx / distance) * offset
+                self.offset_y = (dy / distance) * offset
+            else:
+                self.offset_x = 0
+                self.offset_y = 0
 
     def update(self, delta_time: float) -> None:
         """Update attack animation."""

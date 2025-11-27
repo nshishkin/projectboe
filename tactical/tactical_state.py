@@ -531,12 +531,6 @@ class TacticalState:
                 # Next animation starts where this one ends
                 prev_x, prev_y = float(target_pixel_x), float(target_pixel_y)
 
-            # Update display position to end of path immediately
-            # This ensures that if AI does multiple moves in one turn,
-            # the next animation will start from the correct position
-            unit.display_x = prev_x
-            unit.display_y = prev_y
-
         # Update logical position immediately
         unit.move_to(target_x, target_y)
         unit.current_action_points -= ap_cost
