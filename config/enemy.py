@@ -11,7 +11,9 @@ ENEMY_PRESETS = {
     'forest_monsters': ['cavalry', 'ranged', 'ranged'],
     'undead_horde': ['infantry', 'infantry', 'infantry', 'ranged'],
     'debug_player_win': ['Debug_weak'],
-    'debug_player_loss': ['Debug_strong']
+    'debug_player_loss': ['Debug_strong'],
+    'debug_movement': ['Debug_movement'],
+    'default': ['infantry', 'infantry', 'cavalry', 'ranged']
 }
 
 # Test enemy army (used for debug combat button)

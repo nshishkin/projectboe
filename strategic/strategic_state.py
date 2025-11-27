@@ -11,8 +11,8 @@ from strategic.province import Province
 from strategic.input_handler import pixel_to_hex, hex_to_pixel
 from strategic.movement import get_reachable_cells
 from config.data_definitions import TERRAIN_TYPES
-from config.player_data import HERO_ARMY
-from config.enemy import TEST_ENEMY_ARMY
+from config.player_data import HERO_PRESETS
+from config.enemy import ENEMY_PRESETS
 from config.constants import (
     STRATEGIC_HEX_SIZE, MAP_ROWS, MAP_COLS,
     BG_COLOR, WHITE, BLACK, DARK_GRAY, SCREEN_HEIGHT,
@@ -22,19 +22,24 @@ from config.constants import (
 from strategic import save_system
 
 class StrategicState:
-    def __init__(self, screen, game):
+    def __init__(self, screen, game, scenario_preset: str = 'default'):
         """
         Initialize strategic state with map and hero.
 
         Args:
             screen: Pygame display surface to render to
             game: Reference to Game instance (for triggering combat)
+            scenario_preset: Scenario preset key ('debug_player_win', 'debug_player_loss', 'debug_movement', 'default')
         """
         self.screen = screen
         self.game = game
+        self.scenario_preset = scenario_preset
         self.map_grid = generate_map(MAP_ROWS, MAP_COLS)
         self.hero = Hero(0, 0)  # Start at top-left for now
-        self.hero.army = HERO_ARMY  # Load hero's army from player data
+
+        # Load hero's army from scenario preset
+        self.hero.army = HERO_PRESETS.get(scenario_preset, HERO_PRESETS['default'])
+        print(f"Loaded hero army preset '{scenario_preset}': {self.hero.army}")
 
         # Turn counter
         self.current_turn = 1
@@ -351,10 +356,13 @@ class StrategicState:
         print(f"=== Turn {self.current_turn} started ===")
 
     def _start_test_combat(self):
-        """Start test combat (manual trigger)."""
-        player_army = HERO_ARMY
-        enemy_army = TEST_ENEMY_ARMY
+        """Start test combat (manual trigger) using current scenario preset."""
+        player_army = self.hero.army
+        enemy_army = ENEMY_PRESETS.get(self.scenario_preset, ENEMY_PRESETS['default'])
         terrain = 'plains'
+        print(f"Starting test combat with preset '{self.scenario_preset}'")
+        print(f"  Player army: {player_army}")
+        print(f"  Enemy army: {enemy_army}")
         self.game.start_combat(player_army, enemy_army, terrain)
 
     def _toggle_hex_coords(self):
