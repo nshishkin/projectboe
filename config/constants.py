@@ -74,7 +74,7 @@ UNIT_TYPES = {
         'stamina': 90,
         'initiative': 100,
         'morale': 40,
-        'base_damage': 20,
+        'base_damage': 30,
         'action_points': 9,
         'attack_range': 1,  # Melee range
         'color': (100, 100, 255),  # Синий для игрока

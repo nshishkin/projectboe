@@ -7,7 +7,7 @@ HERO_PRESETS = {
     'debug_player_loss': ['Debug_weak'],
     'debug_player_win': ['Debug_strong'],
     'debug_movement': ['Debug_movement'],
-    'default': ['infantry', 'infantry', 'cavalry', 'ranged']
+    'default': ['infantry', 'infantry']
 }
 # Hero's current army composition
 HERO_ARMY = HERO_PRESETS['debug_player_loss']

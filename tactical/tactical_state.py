@@ -200,7 +200,20 @@ class TacticalState:
 
                 # Check if target died and update turn order
                 if not target.is_alive():
+                    # Find index of dead unit before removing
+                    dead_unit_index = None
+                    for i, u in enumerate(self.turn_order):
+                        if not u.is_alive():
+                            dead_unit_index = i
+                            break
+
+                    # Remove dead units from turn order
                     self.turn_order = [u for u in self.turn_order if u.is_alive()]
+
+                    # Adjust current_unit_index if dead unit was before current unit
+                    if dead_unit_index is not None and dead_unit_index < self.current_unit_index:
+                        self.current_unit_index -= 1
+                        self._log_message(f"[DEBUG] Dead unit was before current, adjusted index: {self.current_unit_index}")
 
             elif action['type'] == 'move':
                 target_x, target_y = action['position']
@@ -386,7 +399,20 @@ class TacticalState:
 
         # Update turn order if units died
         if not target.is_alive():
+            # Find index of dead unit before removing
+            dead_unit_index = None
+            for i, u in enumerate(self.turn_order):
+                if not u.is_alive():
+                    dead_unit_index = i
+                    break
+
+            # Remove dead units from turn order
             self.turn_order = [u for u in self.turn_order if u.is_alive()]
+
+            # Adjust current_unit_index if dead unit was before current unit
+            if dead_unit_index is not None and dead_unit_index < self.current_unit_index:
+                self.current_unit_index -= 1
+                self._log_message(f"[DEBUG] Dead unit was before current, adjusted index: {self.current_unit_index}")
 
     def _calculate_reachable_cells(self):
         """Calculate cells reachable by selected unit based on action points."""

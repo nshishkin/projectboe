@@ -165,7 +165,8 @@ class TacticalRenderer:
         Args:
             unit: Unit to highlight
         """
-        center_x, center_y = hex_to_pixel(unit.x, unit.y)
+        # Use display coordinates (animated position) to match unit rendering
+        center_x, center_y = unit.display_x, unit.display_y
         corners = get_hex_corners(center_x, center_y)
 
         # Draw thick white border
@@ -198,7 +199,8 @@ class TacticalRenderer:
     def _draw_attackable_enemies(self):
         """Draw red borders around enemies that can be attacked by the active unit."""
         for enemy in self.state.attackable_enemies:
-            center_x, center_y = hex_to_pixel(enemy.x, enemy.y)
+            # Use display coordinates (animated position) to match unit rendering
+            center_x, center_y = enemy.display_x, enemy.display_y
             corners = get_hex_corners(center_x, center_y)
 
             # Draw thick red border

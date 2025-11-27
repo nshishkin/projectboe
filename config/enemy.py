@@ -13,8 +13,8 @@ ENEMY_PRESETS = {
     'debug_player_win': ['Debug_weak'],
     'debug_player_loss': ['Debug_strong'],
     'debug_movement': ['Debug_movement'],
-    'default': ['infantry', 'infantry', 'cavalry', 'ranged']
+    'default': ['infantry', 'infantry']
 }
 
 # Test enemy army (used for debug combat button)
-TEST_ENEMY_ARMY = ENEMY_PRESETS['debug_player_loss']
+TEST_ENEMY_ARMY = ENEMY_PRESETS['default']
