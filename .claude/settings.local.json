@@ -13,7 +13,10 @@
       "Bash(move /Y \"c:\\projectboe\\tactical\\tactical_state_temp.py\" \"c:\\projectboe\\tactical\\tactical_state.py\")",
       "Bash(exit 0)",
       "Bash(git checkout:*)",
-      "Bash(timeout 10 python:*)"
+      "Bash(timeout 10 python:*)",
+      "Bash(dir \"c:\\projectboe\\assets\\images\\terrain\\tactical\")",
+      "Bash(dir:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

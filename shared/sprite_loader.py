@@ -16,7 +16,8 @@ class SpriteLoader:
         self._cache: Dict[str, pygame.Surface] = {}
         self.base_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'images')
 
-    def load_sprite(self, relative_path: str, size: Optional[tuple[int, int]] = None, rotate: float = 0) -> Optional[pygame.Surface]:
+    def load_sprite(self, relative_path: str, size: Optional[tuple[int, int]] = None, rotate: float = 0,
+                   color_key: Optional[tuple[int, int, int]] = None) -> Optional[pygame.Surface]:
         """
         Load a sprite from disk or return cached version.
 
@@ -24,12 +25,13 @@ class SpriteLoader:
             relative_path: Path relative to assets/images/ (e.g., 'terrain/strategic/plains.png')
             size: Optional (width, height) to scale sprite to
             rotate: Rotation angle in degrees (positive = counter-clockwise)
+            color_key: Optional RGB color to make transparent (e.g., (255, 255, 255) for white)
 
         Returns:
             Pygame Surface with loaded sprite, or None if file not found
         """
-        # Create cache key including size and rotation
-        cache_key = f"{relative_path}_{size}_{rotate}"
+        # Create cache key including size, rotation, and color key
+        cache_key = f"{relative_path}_{size}_{rotate}_{color_key}"
 
         # Return cached version if available
         if cache_key in self._cache:
@@ -49,6 +51,10 @@ class SpriteLoader:
             # Scale if size specified
             if size:
                 sprite = pygame.transform.scale(sprite, size)
+
+            # Apply color key for transparency if specified
+            if color_key:
+                sprite.set_colorkey(color_key)
 
             # Cache and return
             self._cache[cache_key] = sprite
@@ -88,6 +94,22 @@ class SpriteLoader:
         """
         path = f"units/{unit_type}.png"
         return self.load_sprite(path, size)
+
+    def load_strategic_object(self, object_name: str, size: Optional[tuple[int, int]] = None,
+                              color_key: Optional[tuple[int, int, int]] = None) -> Optional[pygame.Surface]:
+        """
+        Load strategic map object sprite (hero, cities, etc.).
+
+        Args:
+            object_name: Object name ('hero', 'city', etc.)
+            size: Optional size to scale to
+            color_key: Optional RGB color to make transparent (e.g., (255, 255, 255) for white)
+
+        Returns:
+            Pygame Surface or None
+        """
+        path = f"units/strategic/{object_name}.png"
+        return self.load_sprite(path, size, rotate=0, color_key=color_key)
 
     def clear_cache(self):
         """Clear all cached sprites (useful for memory management)."""

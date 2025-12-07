@@ -105,13 +105,14 @@ class StrategicState:
         # Get hexagon corner points
         corners = self._get_hex_corners(center_x, center_y)
 
-        # Try to load terrain sprite
-        hex_diameter = int(STRATEGIC_HEX_SIZE * 2)
+        # Try to load terrain sprite (use actual hex geometry: width = 2*size, height = sqrt(3)*size)
+        hex_width = int(STRATEGIC_HEX_SIZE * 2)
+        hex_height = int(STRATEGIC_HEX_SIZE * math.sqrt(3))
         terrain_sprite = self.sprite_loader.load_terrain_sprite(
             province.terrain_type,
             'strategic',
-            size=(hex_diameter, hex_diameter),
-            rotate=30  # Convert corner-top hexes to flat-top
+            size=(hex_width, hex_height)
+           
         )
 
         if terrain_sprite:
@@ -131,9 +132,18 @@ class StrategicState:
         # Get hero position in pixels
         center_x, center_y = hex_to_pixel(self.hero.x, self.hero.y)
 
-        # Draw hero as white circle with black border
-        pygame.draw.circle(self.screen, WHITE, (int(center_x), int(center_y)), 15)
-        pygame.draw.circle(self.screen, BLACK, (int(center_x), int(center_y)), 15, 2)
+        # Try to load hero sprite
+        hero_size = 60  # Size for hero sprite
+        hero_sprite = self.sprite_loader.load_strategic_object('hero', size=(hero_size, hero_size))
+
+        if hero_sprite:
+            # Draw sprite centered on hex
+            sprite_rect = hero_sprite.get_rect(center=(int(center_x), int(center_y)))
+            self.screen.blit(hero_sprite, sprite_rect)
+        else:
+            # Fallback: Draw hero as white circle with black border
+            pygame.draw.circle(self.screen, WHITE, (int(center_x), int(center_y)), 15)
+            pygame.draw.circle(self.screen, BLACK, (int(center_x), int(center_y)), 15, 2)
 
     def _draw_reachable_cells(self):
         """Draw green highlights on cells hero can move to."""

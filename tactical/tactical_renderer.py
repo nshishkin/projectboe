@@ -82,7 +82,9 @@ class TacticalRenderer:
 
     def _draw_battlefield(self):
         """Draw all battlefield hexagons."""
-        hex_diameter = int(TACTICAL_HEX_SIZE * 2)
+        # Calculate actual hex geometry for sprites
+        hex_width = int(TACTICAL_HEX_SIZE * 2)
+        hex_height = int(TACTICAL_HEX_SIZE * math.sqrt(3))
 
         for row in range(BATTLEFIELD_ROWS):
             for col in range(BATTLEFIELD_COLS):
@@ -95,8 +97,7 @@ class TacticalRenderer:
                 terrain_sprite = self.sprite_loader.load_terrain_sprite(
                     terrain_type,
                     'tactical',
-                    size=(hex_diameter, hex_diameter),
-                    rotate=30  # Convert corner-top hexes to flat-top
+                    size=(hex_width, hex_height)
                 )
 
                 if terrain_sprite:
