@@ -95,6 +95,38 @@ class SpriteLoader:
         path = f"units/{unit_type}.png"
         return self.load_sprite(path, size)
 
+    def load_tactical_unit_sprite(self, unit_type: str, size: Optional[tuple[int, int]] = None,
+                                  flip_horizontal: bool = False) -> Optional[pygame.Surface]:
+        """
+        Load tactical unit sprite with optional horizontal flip for enemies.
+
+        Args:
+            unit_type: Unit type ('infantry', 'cavalry', 'ranged', 'archer', 'spearman', etc.)
+            size: Optional size to scale to
+            flip_horizontal: If True, flip sprite horizontally (for enemy units)
+
+        Returns:
+            Pygame Surface or None
+        """
+        # Create cache key including flip state
+        cache_key = f"units/tactical/{unit_type}.png_{size}_0_{None}_{flip_horizontal}"
+
+        # Return cached version if available
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
+        # Load sprite normally
+        path = f"units/tactical/{unit_type}.png"
+        sprite = self.load_sprite(path, size)
+
+        # Flip horizontally if requested (for enemies)
+        if sprite and flip_horizontal:
+            sprite = pygame.transform.flip(sprite, True, False)
+            # Cache the flipped version
+            self._cache[cache_key] = sprite
+
+        return sprite
+
     def load_strategic_object(self, object_name: str, size: Optional[tuple[int, int]] = None,
                               color_key: Optional[tuple[int, int, int]] = None) -> Optional[pygame.Surface]:
         """

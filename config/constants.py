@@ -10,7 +10,7 @@ FPS = 60
 
 # Hex settings
 STRATEGIC_HEX_SIZE = 40  # Radius for strategic map hexagons
-TACTICAL_HEX_SIZE = 30   # Radius for tactical battlefield hexagons
+TACTICAL_HEX_SIZE = 40   # Radius for tactical battlefield hexagons
 
 # Colors (R, G, B)
 BLACK = (0, 0, 0)

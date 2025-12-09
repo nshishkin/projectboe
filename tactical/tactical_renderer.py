@@ -122,31 +122,45 @@ class TacticalRenderer:
             center_y = unit.display_y
 
             # Add bouncing animation for current unit (only when not animating movement/attack)
+            bounce_offset = 0
             if unit == current_unit and not self.state.combat_ended and not self.state.animation_queue.is_playing():
                 # Sin wave animation: ±5 pixels, 2 second cycle
                 bounce_offset = math.sin(self.state.animation_time * math.pi) * 5
                 center_y += bounce_offset
 
-            # Draw unit as circle with color
-            radius = int(TACTICAL_HEX_SIZE * 0.6)
-            pygame.draw.circle(self.state.screen, unit.color, (int(center_x), int(center_y)), radius)
-            pygame.draw.circle(self.state.screen, BLACK, (int(center_x), int(center_y)), radius, 2)
+            # Try to load unit sprite
+            unit_size = int(TACTICAL_HEX_SIZE * 1.5)  # Sprite size slightly larger than hex
+            unit_sprite = self.sprite_loader.load_tactical_unit_sprite(
+                unit.unit_type,
+                size=(unit_size, unit_size),
+                flip_horizontal=not unit.is_player  # Flip enemies to face left
+            )
 
-            # Draw directional "beak" (cone)
-            beak_size = int(radius * 0.5)
-            if unit.is_player:
-                # Player units face right
-                beak_tip = (int(center_x + radius), int(center_y))
-                beak_top = (int(center_x + radius * 0.3), int(center_y - beak_size))
-                beak_bottom = (int(center_x + radius * 0.3), int(center_y + beak_size))
+            if unit_sprite:
+                # Draw sprite centered on unit position
+                sprite_rect = unit_sprite.get_rect(center=(int(center_x), int(center_y)))
+                self.state.screen.blit(unit_sprite, sprite_rect)
             else:
-                # Enemy units face left
-                beak_tip = (int(center_x - radius), int(center_y))
-                beak_top = (int(center_x - radius * 0.3), int(center_y - beak_size))
-                beak_bottom = (int(center_x - radius * 0.3), int(center_y + beak_size))
+                # Fallback: Draw unit as circle with color
+                radius = int(TACTICAL_HEX_SIZE * 0.6)
+                pygame.draw.circle(self.state.screen, unit.color, (int(center_x), int(center_y)), radius)
+                pygame.draw.circle(self.state.screen, BLACK, (int(center_x), int(center_y)), radius, 2)
 
-            pygame.draw.polygon(self.state.screen, unit.color, [beak_tip, beak_top, beak_bottom])
-            pygame.draw.polygon(self.state.screen, BLACK, [beak_tip, beak_top, beak_bottom], 2)
+                # Draw directional "beak" (cone)
+                beak_size = int(radius * 0.5)
+                if unit.is_player:
+                    # Player units face right
+                    beak_tip = (int(center_x + radius), int(center_y))
+                    beak_top = (int(center_x + radius * 0.3), int(center_y - beak_size))
+                    beak_bottom = (int(center_x + radius * 0.3), int(center_y + beak_size))
+                else:
+                    # Enemy units face left
+                    beak_tip = (int(center_x - radius), int(center_y))
+                    beak_top = (int(center_x - radius * 0.3), int(center_y - beak_size))
+                    beak_bottom = (int(center_x - radius * 0.3), int(center_y + beak_size))
+
+                pygame.draw.polygon(self.state.screen, unit.color, [beak_tip, beak_top, beak_bottom])
+                pygame.draw.polygon(self.state.screen, BLACK, [beak_tip, beak_top, beak_bottom], 2)
 
             # Draw HP bar
             self._draw_hp_bar(unit, center_x, center_y)
