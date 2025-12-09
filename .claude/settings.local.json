@@ -16,7 +16,9 @@
       "Bash(timeout 10 python:*)",
       "Bash(dir \"c:\\projectboe\\assets\\images\\terrain\\tactical\")",
       "Bash(dir:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
