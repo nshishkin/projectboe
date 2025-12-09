@@ -75,38 +75,71 @@ Implementation Phases
   4. ✅ Implement animation skipping (click during animation)
   5. ✅ Refactor tactical layer: separate rendering, input, and geometry modules
   6. ✅ Add combat logging system with scrollable message history
-  7. ✅ Unify hex coordinate systems (odd-q vertical layout for both strategic and tactical)
+  7. ✅ Unify hex coordinate systems (even-q vertical layout for both strategic and tactical)
   8. ✅ Add hex_geometry.py - Centralized hex coordinate utilities
-  9. ✅ Fix multi-hex animation bug (chaining animations correctly)
+  9. ✅ Fix animation synchronization bugs (movement+attack, movement+movement)
+  10. ✅ Implement sprite loading system with caching
+  11. ✅ Add terrain and unit sprites for both strategic and tactical layers
 
-  Files: animation.py, combat_unit.py, tactical_state.py, tactical_renderer.py, tactical_input.py, hex_geometry.py, constants.py
+  Files: animation.py, combat_unit.py, tactical_state.py, tactical_renderer.py, tactical_input.py, hex_geometry.py, sprite_loader.py, constants.py
 
-  Additional features implemented:
+  **Animation System:**
   - Configurable animation speeds (3 hexes/sec for movement, 0.25s for attacks)
   - Sequential animation queue with proper chaining for multi-hex movement
+  - Dual coordinate system: logical (unit.x/y) for game logic, display (display_x/y) for visuals
+  - Animation start positions calculated from logical coordinates via hex_to_pixel()
+  - Prevents "teleportation" artifacts when chaining multiple actions
+
+  **Refactoring & UI:**
   - TacticalRenderer class for separation of rendering logic (~400 lines)
   - TacticalInput class for input handling and button management
   - Combat log with automatic word wrapping and mouse wheel scrolling
-  - Directional visual indicators ("beaks") on units
   - Unit display names (e.g., "Party0 (Infantry)")
   - Debug controls (instant finish, hex coordinate display toggle)
-  - Unified hex geometry with BATTLEFIELD_OFFSET support
+  - Turn end logging with hex coordinates
+
+  **Sprite System:**
+  - SpriteLoader singleton with automatic caching
+  - Support for terrain tiles (strategic 80x80, tactical 60x60)
+  - Support for unit sprites (tactical 48-64px, strategic hero 60x60)
+  - Automatic horizontal flip for enemy units
+  - Fallback to colored shapes if sprites not found
+  - Assets organized in assets/images/terrain and assets/images/units
+
+  **Critical Bug Fixes:**
+  - Fixed animation "teleportation" when enemy units start moving
+  - Fixed turn order corruption when units die mid-combat
+  - Fixed infinite recursion on player defeat
+  - Fixed victory/defeat animation timing
+  - Fixed coordinate system (corrected to even-q from odd-q)
 
   ---
-  Phase 6: Save System and Encounters (Week 6)
+  Phase 6: Save System and Encounters (Week 6) 🔄 IN PROGRESS
 
   Goal: Playable vertical slice with persistence
 
-  1. Implement save_system.py - JSON save/load
-  2. Add save/load to strategic_state.py
-  3. Implement encounter system - Generate encounters on map, trigger combat on movement
-  4. Implement utils.py - Pathfinding helpers (if needed)
-  5. Improve map generation (constraints, connectivity)
-  6. Add UI for retreat and auto-resolve options
-  7. Update hero.py army composition persistence
-  8. Test: Can play multiple sessions with save/load
+  **Current Status:**
+  - Animation system fully polished and bug-free ✅
+  - Sprite loading system implemented ✅
+  - Tactical combat visually complete ✅
+  - Ready to implement save system and encounters
+
+  **Remaining Tasks:**
+  1. ⏳ Implement save_system.py - JSON save/load
+  2. ⏳ Add save/load to strategic_state.py
+  3. ⏳ Implement encounter system - Generate encounters on map, trigger combat on movement
+  4. ⏳ Implement utils.py - Pathfinding helpers (if needed)
+  5. ⏳ Improve map generation (constraints, connectivity)
+  6. ⏳ Add UI for retreat and auto-resolve options
+  7. ⏳ Update hero.py army composition persistence
+  8. ⏳ Test: Can play multiple sessions with save/load
 
   Files: save_system.py, utils.py, map_generator.py, province.py, strategic_state.py
+
+  **Notes:**
+  - Tactical layer is feature-complete and stable
+  - All critical animation bugs resolved
+  - Focus now shifts to strategic layer integration and persistence
 
   ---
   Phase 7: Content and Balance (Week 7)

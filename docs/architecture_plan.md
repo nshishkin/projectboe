@@ -72,10 +72,11 @@ The game follows a **layered state machine** architecture with clear separation 
 16. **hex_geometry.py** - Hex coordinate conversions (pixel ↔ grid) and distance calculations
 
 ### Shared Systems
-17. **renderer.py** - Pygame rendering for strategic map (battlefield now uses tactical_renderer.py)
-18. **input_handler.py** - Mouse/keyboard input for strategic map (hex coordinate conversion)
-19. **save_system.py** - JSON save/load for strategic state only
-20. **utils.py** - Helper functions (distance, pathfinding, general utilities)
+17. **sprite_loader.py** - Centralized sprite loading with caching (terrain, units, strategic objects)
+18. **renderer.py** - Pygame rendering for strategic map (battlefield now uses tactical_renderer.py)
+19. **input_handler.py** - Mouse/keyboard input for strategic map (hex coordinate conversion)
+20. **save_system.py** - JSON save/load for strategic state only
+21. **utils.py** - Helper functions (distance, pathfinding, general utilities)
 
 ---
 
@@ -236,8 +237,8 @@ for step_x, step_y in path:
 
 ### Hex Coordinate System
 
-Both strategic and tactical layers now use **odd-q vertical layout**:
-- Odd columns (x % 2 == 1) offset downward by hex_height/2
+Both strategic and tactical layers now use **even-q vertical layout** (flat-top hexagons):
+- Even columns (x % 2 == 0) offset downward by hex_height/2
 - Horizontal spacing: `hex_width * 3/4` (75% of hex width)
 - Includes battlefield offsets (BATTLEFIELD_OFFSET_X/Y = 50, 50)
 
@@ -246,6 +247,96 @@ Both strategic and tactical layers now use **odd-q vertical layout**:
 - `pixel_to_hex(mouse_x, mouse_y)`: Mouse → grid coordinates (nearest neighbor)
 - `calculate_hex_distance(x1, y1, x2, y2)`: Hex distance via cube coordinates
 - `get_hex_corners(center_x, center_y)`: 6 corner points for rendering
+
+### Animation Coordinate System
+
+Units use a **dual coordinate system** for smooth animations:
+
+**Logical Coordinates (unit.x, unit.y)**
+- Grid position on battlefield (integer hex coordinates)
+- Updated **immediately** when unit moves or attacks
+- Used as **source of truth** for game logic, pathfinding, range checks
+
+**Display Coordinates (unit.display_x, unit.display_y)**
+- Visual position in pixels (float)
+- Interpolated gradually by animations
+- Synced with logical position when animations complete
+
+**Key Design Principle:**
+- Animations calculate start positions from **logical coordinates** via `hex_to_pixel(unit.x, unit.y)`
+- This ensures animations always begin from the correct position, even when queued
+- No reliance on `display_x/display_y` for animation initialization
+- Prevents "teleportation" artifacts when chaining multiple moves/attacks
+
+---
+
+## Sprite Loading System
+
+The game uses a centralized sprite loading system with automatic caching for performance.
+
+### SpriteLoader Architecture
+
+**Location:** `shared/sprite_loader.py`
+
+**Features:**
+- Singleton pattern via `get_sprite_loader()`
+- Automatic caching with composite keys (path + size + rotation + color_key)
+- Fallback to colored shapes if sprites not found
+- Support for scaling, rotation, transparency, and horizontal flipping
+
+### Sprite Organization
+
+```
+assets/images/
+├── terrain/
+│   ├── strategic/       # 40px radius hex tiles
+│   │   ├── plains.png
+│   │   ├── woods.png
+│   │   ├── swamp.png
+│   │   └── hills.png
+│   └── tactical/        # 30px radius hex tiles
+│       ├── plains.png
+│       ├── woods.png
+│       ├── swamp.png
+│       └── hills.png
+└── units/
+    ├── strategic/       # Strategic map objects
+    │   └── hero.png
+    └── tactical/        # Combat unit sprites (48x48 - 64x64)
+        ├── infantry.png
+        ├── cavalry.png
+        ├── ranged.png
+        ├── archer.png
+        └── spearman.png
+```
+
+### Loading Methods
+
+**`load_terrain_sprite(terrain_type, layer, size, rotate)`**
+- Loads terrain hex tiles for strategic or tactical layers
+- Path: `terrain/{layer}/{terrain_type}.png`
+
+**`load_tactical_unit_sprite(unit_type, size, flip_horizontal)`**
+- Loads combat unit sprites with optional horizontal flip for enemies
+- Path: `units/tactical/{unit_type}.png`
+- Enemy units automatically flipped to face left
+
+**`load_strategic_object(object_name, size, color_key)`**
+- Loads hero and other strategic map objects
+- Path: `units/strategic/{object_name}.png`
+- Supports color key transparency
+
+### Integration
+
+**Tactical Renderer:**
+- Loads unit sprites at `TACTICAL_HEX_SIZE * 1.5` (45px for 30px hex)
+- Automatically flips enemy sprites: `flip_horizontal=not unit.is_player`
+- Centered on unit's `display_x/display_y` coordinates
+
+**Strategic State:**
+- Loads hero sprite at 60x60 pixels
+- Loads terrain sprites matching hex size (80x80)
+- Centered on hex centers
 
 ---
 
@@ -287,9 +378,18 @@ boe/
 │   ├── animation.py               # NEW - Animation system
 │   └── hex_geometry.py            # NEW - Hex coordinate utilities
 ├── shared/
+│   ├── sprite_loader.py           # Sprite loading with caching
 │   ├── renderer.py                # Strategic map rendering
 │   ├── save_system.py             # TODO
 │   └── utils.py                   # TODO
+├── assets/
+│   └── images/
+│       ├── terrain/               # Terrain hex tiles
+│       │   ├── strategic/         # Strategic layer tiles
+│       │   └── tactical/          # Tactical layer tiles
+│       └── units/                 # Unit sprites
+│           ├── strategic/         # Hero sprite
+│           └── tactical/          # Combat unit sprites
 └── docs/
     ├── architecture_plan.md
     ├── progress.md
